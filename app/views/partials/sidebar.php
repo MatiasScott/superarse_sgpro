@@ -11,6 +11,189 @@ if (!isset($roles) || !is_array($roles)) {
         $roles = [];
     }
 }
+
+require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+
+$canViewPortfolios = PermissionHelper::can('portfolios', 'view', $roles);
+$canViewEvaluations = PermissionHelper::can('evaluations', 'view', $roles);
+$canViewContinuity = PermissionHelper::can('continuity', 'view', $roles);
+$canViewAssignments = PermissionHelper::can('assignments', 'view', $roles);
+$canViewContracts = PermissionHelper::can('contracts', 'view', $roles);
+$canViewInvoices = PermissionHelper::can('invoices', 'view', $roles);
+$canViewReports = PermissionHelper::can('reports', 'view', $roles);
+$canViewSubjects = PermissionHelper::can('subjects', 'view', $roles);
+$canViewCareers = PermissionHelper::can('careers', 'view', $roles);
+$canViewUsers = PermissionHelper::can('users', 'view', $roles);
+$canViewPao = PermissionHelper::can('pao', 'view', $roles);
+$canViewPermissionAdmin = PermissionHelper::hasAnyRole(['Super Administrador'], $roles);
+
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+
+if (defined('BASE_PATH') && BASE_PATH !== '' && strpos($requestPath, BASE_PATH) === 0) {
+    $currentPath = substr($requestPath, strlen(BASE_PATH));
+} else {
+    $currentPath = $requestPath;
+}
+
+$currentPath = '/' . ltrim((string)$currentPath, '/');
+if ($currentPath === '//') {
+    $currentPath = '/';
+}
+
+$isActivePath = function ($patterns) use ($currentPath) {
+    foreach ((array)$patterns as $pattern) {
+        if ($pattern === '/' && $currentPath === '/') {
+            return true;
+        }
+
+        if ($pattern !== '/' && strpos($currentPath, $pattern) === 0) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+$renderMenuItem = function ($item) use ($isActivePath) {
+    if (empty($item['visible'])) {
+        return;
+    }
+
+    $isActive = $isActivePath($item['active_patterns'] ?? []);
+    $baseClass = 'flex items-center space-x-3 py-3 px-4 rounded-xl transition-all duration-200 sidebar-item-text';
+    $stateClass = $isActive
+        ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg'
+        : 'hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600';
+    ?>
+    <li class="mb-2">
+        <a href="<?php echo BASE_PATH . $item['path']; ?>" class="<?php echo $baseClass . ' ' . $stateClass; ?>">
+            <i class="<?php echo htmlspecialchars($item['icon']); ?> text-lg"></i>
+            <span class="font-medium"><?php echo htmlspecialchars($item['label']); ?></span>
+        </a>
+    </li>
+    <?php
+};
+
+$menuSections = [
+    [
+        'title' => 'Principal',
+        'items' => [
+            [
+                'label' => 'Dashboard',
+                'path' => '/dashboard',
+                'icon' => 'fas fa-tachometer-alt',
+                'visible' => true,
+                'active_patterns' => ['/', '/dashboard'],
+            ],
+            [
+                'label' => 'Mi Perfil',
+                'path' => '/professor/cv',
+                'icon' => 'fas fa-user-circle',
+                'visible' => true,
+                'active_patterns' => ['/professor'],
+            ],
+        ],
+    ],
+    [
+        'title' => 'Gestión Docente',
+        'items' => [
+            [
+                'label' => 'Portafolios',
+                'path' => '/portfolios',
+                'icon' => 'fas fa-folder-open',
+                'visible' => $canViewPortfolios,
+                'active_patterns' => ['/portfolios', '/professor/portfolio'],
+            ],
+            [
+                'label' => 'Evaluaciones',
+                'path' => '/evaluations',
+                'icon' => 'fas fa-chart-line',
+                'visible' => $canViewEvaluations,
+                'active_patterns' => ['/evaluations'],
+            ],
+            [
+                'label' => 'Continuidad',
+                'path' => '/continuity',
+                'icon' => 'fas fa-sync-alt',
+                'visible' => $canViewContinuity,
+                'active_patterns' => ['/continuity'],
+            ],
+        ],
+    ],
+    [
+        'title' => 'Académico',
+        'items' => [
+            [
+                'label' => 'Asignaciones',
+                'path' => '/academic/assignments',
+                'icon' => 'fas fa-tasks',
+                'visible' => $canViewAssignments,
+                'active_patterns' => ['/academic/assignments', '/assignments'],
+            ],
+            [
+                'label' => 'Materias',
+                'path' => '/academic/subjects',
+                'icon' => 'fas fa-book-open',
+                'visible' => $canViewSubjects,
+                'active_patterns' => ['/academic/subjects', '/subjects'],
+            ],
+            [
+                'label' => 'Carreras',
+                'path' => '/academic/careers',
+                'icon' => 'fas fa-graduation-cap',
+                'visible' => $canViewCareers,
+                'active_patterns' => ['/academic/careers', '/careers'],
+            ],
+            [
+                'label' => 'Gestión de PAO',
+                'path' => '/pao',
+                'icon' => 'fas fa-calendar-alt',
+                'visible' => $canViewPao,
+                'active_patterns' => ['/pao'],
+            ],
+        ],
+    ],
+    [
+        'title' => 'Administración',
+        'items' => [
+            [
+                'label' => 'Contratos',
+                'path' => '/contracts',
+                'icon' => 'fas fa-file-contract',
+                'visible' => $canViewContracts,
+                'active_patterns' => ['/contracts'],
+            ],
+            [
+                'label' => 'Facturas',
+                'path' => '/invoices',
+                'icon' => 'fas fa-file-invoice-dollar',
+                'visible' => $canViewInvoices,
+                'active_patterns' => ['/invoices'],
+            ],
+            [
+                'label' => 'Reportes',
+                'path' => '/reports',
+                'icon' => 'fas fa-chart-bar',
+                'visible' => $canViewReports,
+                'active_patterns' => ['/reports'],
+            ],
+            [
+                'label' => 'Gestión de Usuarios',
+                'path' => '/users',
+                'icon' => 'fas fa-users-cog',
+                'visible' => $canViewUsers,
+                'active_patterns' => ['/users'],
+            ],
+            [
+                'label' => 'Permisos',
+                'path' => '/permissions',
+                'icon' => 'fas fa-shield-alt',
+                'visible' => $canViewPermissionAdmin,
+                'active_patterns' => ['/permissions'],
+            ],
+        ],
+    ],
+];
 ?>
 <!-- Botón hamburguesa para móvil -->
 <button class="mobile-menu-button fixed top-4 left-4 z-50 lg:hidden" id="mobileMenuButton" aria-label="Abrir menú">
@@ -33,126 +216,28 @@ if (!isset($roles) || !is_array($roles)) {
     </div>
     
     <nav class="px-4">
+        <?php foreach ($menuSections as $section): ?>
+            <?php
+            $visibleItems = array_values(array_filter($section['items'], function ($item) {
+                return !empty($item['visible']);
+            }));
+            ?>
+
+            <?php if (!empty($visibleItems)): ?>
+                <div class="mb-5">
+                    <p class="px-4 mb-2 text-[11px] uppercase tracking-[0.15em] text-blue-200/80 font-semibold">
+                        <?php echo htmlspecialchars($section['title']); ?>
+                    </p>
+                    <ul>
+                        <?php foreach ($visibleItems as $item): ?>
+                            <?php $renderMenuItem($item); ?>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+        <?php endforeach; ?>
+
         <ul>
-
-
-            <li class="mb-2">
-                <a href="<?php echo BASE_PATH; ?>/dashboard" 
-                   class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/dashboard') !== false || $_SERVER['REQUEST_URI'] === BASE_PATH . '/' || $_SERVER['REQUEST_URI'] === BASE_PATH) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                   <i class="fas fa-tachometer-alt text-lg"></i>
-                   <span class="font-medium">Dashboard</span>
-                </a>
-            </li>
-
-
-
-            <li class="mb-2">
-                <a href="<?php echo BASE_PATH; ?>/professor/cv" 
-                   class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/professor') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                   <i class="fas fa-user-circle text-lg"></i>
-                   <span class="font-medium">Mi Perfil</span>
-                </a>
-            </li>
-        
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Profesor', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name')) || in_array('Talento humano', array_column($roles, 'role_name'))): ?>
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/portfolios" 
-                        class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/portfolios') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                        <i class="fas fa-folder-open text-lg"></i>
-                        <span class="font-medium">Portafolios</span>
-                    </a>
-                </li>            
-            <?php endif; ?>
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Profesor', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/evaluations" 
-                        class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/evaluations') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                        <i class="fas fa-chart-line text-lg"></i>
-                        <span class="font-medium">Evaluaciones</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Profesor', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/continuity" 
-                        class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/continuity') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                        <i class="fas fa-sync-alt text-lg"></i>
-                        <span class="font-medium">Continuidad</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Profesor', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>  
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/academic/assignments" 
-                       class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/assignments') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                       <i class="fas fa-tasks text-lg"></i>
-                       <span class="font-medium">Asignaciones</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Profesor', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>  
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/contracts" 
-                       class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/contracts') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                       <i class="fas fa-file-contract text-lg"></i>
-                       <span class="font-medium">Contratos</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Profesor', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>  
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/invoices" 
-                       class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/invoices') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                       <i class="fas fa-file-invoice-dollar text-lg"></i>
-                       <span class="font-medium">Facturas</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>  
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/reports" 
-                       class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/reports') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                       <i class="fas fa-chart-bar text-lg"></i>
-                       <span class="font-medium">Reportes</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (in_array('Coordinador académico', array_column($roles, 'role_name')) || in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/academic/subjects" 
-                        class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/subjects') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                        <i class="fas fa-book-open text-lg"></i>
-                        <span class="font-medium">Materias</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Talento humano', array_column($roles, 'role_name'))): ?>
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/users" 
-                       class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/users') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                       <i class="fas fa-users-cog text-lg"></i>
-                       <span class="font-medium">Gestión de Usuarios</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-            <?php if (in_array('Super Administrador', array_column($roles, 'role_name'))|| in_array('Director de docencia', array_column($roles, 'role_name'))): ?>
-                <li class="mb-2">
-                    <a href="<?php echo BASE_PATH; ?>/pao" 
-                       class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 sidebar-item-text <?php echo (strpos($_SERVER['REQUEST_URI'], '/pao') !== false) ? 'active bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg' : ''; ?>">
-                       <i class="fas fa-calendar-alt text-lg"></i>
-                       <span class="font-medium">Gestión de PAO</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
             <li class="mt-6 pt-6 border-t border-gray-600">
                 <a href="<?php echo BASE_PATH; ?>/logout" 
                    class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-red-600 hover:to-rose-600 transition-all duration-200 text-red-300 hover:text-white group">

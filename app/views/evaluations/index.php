@@ -47,8 +47,10 @@
 <body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 font-sans min-h-screen">
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
     <?php
-        $isProfesor = isset($roles) && is_array($roles) && in_array('Profesor', array_column($roles, 'role_name'));
-        $isAdminEvaluator = isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 5 || $_SESSION['user_role'] == 1);
+        require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+        $isProfesor = PermissionHelper::hasAnyRole(['Profesor'], $roles ?? null);
+        $isAdminEvaluator = PermissionHelper::can('evaluations', 'manage_all', $roles ?? null);
+        $canCreateEvaluation = PermissionHelper::can('evaluations', 'create', $roles ?? null);
         $canEditEvaluation = $isAdminEvaluator || $isProfesor;
         $canDeleteEvaluation = $isAdminEvaluator && !$isProfesor;
     ?>
@@ -70,7 +72,7 @@
             <?php unset($_SESSION['flash_error']); ?>
         <?php endif; ?>
 
-        <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 2)) { ?>
+        <?php if ($canCreateEvaluation) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">

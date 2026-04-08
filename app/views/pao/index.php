@@ -46,6 +46,11 @@
 
 <body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 font-sans min-h-screen">
 
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $canManagePao = PermissionHelper::can('pao', 'manage_all', $roles ?? null);
+    ?>
+
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
 
     <div class="main-content">
@@ -61,7 +66,7 @@
                             <p class="text-emerald-100 mt-1">Administre los Periodos Académicos Ordinarios</p>
                         </div>
                     </div>
-                    <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 3)) { ?>
+                    <?php if ($canManagePao) { ?>
                         <a href="<?php echo BASE_PATH; ?>/pao/create" class="bg-white hover:bg-gray-50 text-emerald-600 font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 w-full md:w-auto">
                             <i class="fas fa-plus-circle text-xl"></i>
                             <span>Crear Nuevo PAO</span>
@@ -153,7 +158,7 @@
                                         </div>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                        <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 3)): ?>
+                                        <?php if ($canManagePao): ?>
                                             <div class="flex items-center space-x-2">
                                                 <a href="<?php echo BASE_PATH; ?>/pao/edit/<?php echo htmlspecialchars($pao['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
                                                     <i class="fas fa-edit"></i>

@@ -45,9 +45,14 @@
 </head>
 
 <body class="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 font-sans min-h-screen">
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $canManageContinuity = PermissionHelper::can('continuity', 'manage_all', $roles ?? null);
+    $isProfessorContinuity = PermissionHelper::hasAnyRole(['Profesor'], $roles ?? null);
+    ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="main-content">
-        <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 4)) { ?>
+        <?php if ($canManageContinuity) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -235,19 +240,7 @@
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <?php
-                                        // Super Administrador (role 1) siempre puede editar
-                                        // TH/Docencia (role 4) siempre puede editar
-                                        // Profesor (role 5) puede editar solo si TH no ha tomado decisión
-                                        $canEdit = false;
-                                        if (isset($_SESSION['user_role'])) {
-                                            if ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 4) {
-                                                // Super Admin y Talento Humano siempre pueden editar
-                                                $canEdit = true;
-                                            } elseif ($_SESSION['user_role'] == 5 && $continuity['docencia_decision'] === null) {
-                                                // Profesor puede editar solo si TH no ha decidido
-                                                $canEdit = true;
-                                            }
-                                        }
+                                        $canEdit = $canManageContinuity || ($isProfessorContinuity && $continuity['docencia_decision'] === null);
                                         ?>
                                         <div class="flex items-center justify-end space-x-2">
                                             <?php if ($canEdit): ?>
@@ -256,13 +249,13 @@
                                                     <span>Editar</span>
                                                 </a>
                                             <?php endif; ?>
-                                            <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 4)): ?>
+                                            <?php if ($canManageContinuity): ?>
                                                 <a href="<?php echo BASE_PATH; ?>/continuity/delete/<?php echo htmlspecialchars($continuity['id']); ?>" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2" onclick="return confirm('¿Está seguro de eliminar este registro de continuidad?')">
                                                     <i class="fas fa-trash-alt"></i>
                                                     <span>Eliminar</span>
                                                 </a>
                                             <?php endif; ?>
-                                            <?php if (!$canEdit && isset($_SESSION['user_role']) && $_SESSION['user_role'] == 5 && $continuity['docencia_decision'] !== null): ?>
+                                            <?php if (!$canEdit && $isProfessorContinuity && $continuity['docencia_decision'] !== null): ?>
                                                 <span class="inline-flex items-center space-x-2 text-gray-400 italic bg-gray-100 px-3 py-2 rounded-lg">
                                                     <i class="fas fa-lock"></i>
                                                     <span>Proceso finalizado</span>

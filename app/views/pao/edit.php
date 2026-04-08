@@ -11,8 +11,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 font-sans">
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $canManagePao = PermissionHelper::can('pao', 'manage_all', $roles ?? null);
+    ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
-    <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 3)){ ?>
+    <?php if ($canManagePao){ ?>
     <div class="main-content">
         <?php } ?>
         <main class="max-w-3xl mx-auto">

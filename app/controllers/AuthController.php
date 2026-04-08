@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/RoleModel.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class AuthController
 {
@@ -36,12 +37,16 @@ class AuthController
             $user = $this->userModel->findByEmail($email);
             $userrole = $user ? $this->roleModel->getRolesByUserId($user['id']) : [];
             $role = $userrole[0]['id'] ?? '';
+            $roleNames = array_values(array_unique(array_column($userrole, 'role_name')));
+            $roleIds = array_values(array_unique(array_column($userrole, 'id')));
 
             if ($user && password_verify($password, $user['password'])) {
                 // Autenticación exitosa
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
                 $_SESSION['user_role'] = $role;
+                $_SESSION['role_names'] = $roleNames;
+                $_SESSION['role_ids'] = $roleIds;
                 
                 // Redirige al dashboard
                 header('Location: ' . BASE_PATH . '/dashboard');
@@ -59,6 +64,8 @@ class AuthController
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['user_name'] = $user['name'];
                     $_SESSION['user_role'] = $role;
+                    $_SESSION['role_names'] = $roleNames;
+                    $_SESSION['role_ids'] = $roleIds;
 
                     header('Location: ' . BASE_PATH . '/dashboard');
                     exit();
@@ -162,6 +169,7 @@ class AuthController
 
     public function logout()
     {
+        unset($_SESSION['role_names'], $_SESSION['role_ids']);
         session_destroy();
         header('Location: ' . BASE_PATH . '/');
         exit();

@@ -5,6 +5,162 @@ class Router
 {
     private $routes = [];
 
+    private function getPermissionRequirement($controller, $method)
+    {
+        $map = [
+            'Dashboard' => ['module' => 'dashboard', 'actions' => ['view']],
+            'Notification' => ['module' => 'notifications', 'actions' => ['view']],
+            'Permission' => ['module' => 'permissions', 'actions' => ['manage_all']],
+            'User' => [
+                'index' => ['module' => 'users', 'actions' => ['view', 'manage_all']],
+                'create' => ['module' => 'users', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'users', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'users', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'users', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'users', 'actions' => ['delete', 'manage_all']],
+                '__default' => ['module' => 'users', 'actions' => ['manage_all']],
+            ],
+            'Report' => ['module' => 'reports', 'actions' => ['view']],
+
+            'Pao' => [
+                'index' => ['module' => 'pao', 'actions' => ['view']],
+                'create' => ['module' => 'pao', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'pao', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'pao', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'pao', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'pao', 'actions' => ['delete', 'manage_all']],
+                '__default' => ['module' => 'pao', 'actions' => ['manage_all']],
+            ],
+            'Portfolio' => [
+                'index' => ['module' => 'portfolios', 'actions' => ['view']],
+                'viewByProfessorPao' => ['module' => 'portfolios', 'actions' => ['view']],
+                'create' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'updateType' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'delete' => ['module' => 'portfolios', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                '__default' => ['module' => 'portfolios', 'actions' => ['manage_all', 'manage_own']],
+            ],
+            'Evaluation' => [
+                'index' => ['module' => 'evaluations', 'actions' => ['view']],
+                'create' => ['module' => 'evaluations', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'evaluations', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'evaluations', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'evaluations', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'delete' => ['module' => 'evaluations', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                '__default' => ['module' => 'evaluations', 'actions' => ['manage_all', 'manage_own']],
+            ],
+            'Continuity' => [
+                'index' => ['module' => 'continuity', 'actions' => ['view']],
+                'create' => ['module' => 'continuity', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'continuity', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'continuity', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'continuity', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'delete' => ['module' => 'continuity', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                '__default' => ['module' => 'continuity', 'actions' => ['manage_all', 'manage_own']],
+            ],
+            'Assignment' => [
+                'index' => ['module' => 'assignments', 'actions' => ['view']],
+                'create' => ['module' => 'assignments', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'assignments', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'assignments', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'assignments', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'delete' => ['module' => 'assignments', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                '__default' => ['module' => 'assignments', 'actions' => ['manage_all', 'manage_own']],
+            ],
+            'Contract' => [
+                'index' => ['module' => 'contracts', 'actions' => ['view']],
+                'create' => ['module' => 'contracts', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'contracts', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'contracts', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'contracts', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'delete' => ['module' => 'contracts', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                '__default' => ['module' => 'contracts', 'actions' => ['manage_all', 'manage_own']],
+            ],
+            'Invoice' => [
+                'index' => ['module' => 'invoices', 'actions' => ['view']],
+                'create' => ['module' => 'invoices', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'invoices', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'delete' => ['module' => 'invoices', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                '__default' => ['module' => 'invoices', 'actions' => ['manage_all', 'manage_own']],
+            ],
+            'Subject' => [
+                'index' => ['module' => 'subjects', 'actions' => ['view']],
+                'create' => ['module' => 'subjects', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'subjects', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'subjects', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'subjects', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'subjects', 'actions' => ['delete', 'manage_all']],
+                '__default' => ['module' => 'subjects', 'actions' => ['manage_all']],
+            ],
+            'Career' => [
+                'index' => ['module' => 'careers', 'actions' => ['view']],
+                'create' => ['module' => 'careers', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'careers', 'actions' => ['create', 'manage_all']],
+                'quickStore' => ['module' => 'careers', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'careers', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'careers', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'careers', 'actions' => ['delete', 'manage_all']],
+                '__default' => ['module' => 'careers', 'actions' => ['manage_all']],
+            ],
+
+            // Módulos de CV: se tratan como perfil del usuario autenticado
+            'ProfessorCv' => ['module' => 'profile', 'actions' => ['view']],
+            'CvEducation' => ['module' => 'profile', 'actions' => ['view']],
+            'CvAcademicManagementExperience' => ['module' => 'profile', 'actions' => ['view']],
+            'CvTeachingExperience' => ['module' => 'profile', 'actions' => ['view']],
+            'CvProfessionalExperience' => ['module' => 'profile', 'actions' => ['view']],
+            'CvResearchProjects' => ['module' => 'profile', 'actions' => ['view']],
+            'CvPresentations' => ['module' => 'profile', 'actions' => ['view']],
+            'CvPublications' => ['module' => 'profile', 'actions' => ['view']],
+            'CvOutreachProjects' => ['module' => 'profile', 'actions' => ['view']],
+            'CvThesisDirection' => ['module' => 'profile', 'actions' => ['view']],
+            'CvTraining' => ['module' => 'profile', 'actions' => ['view']],
+            'CvWorkReferences' => ['module' => 'profile', 'actions' => ['view']],
+            'CvPersonalReferences' => ['module' => 'profile', 'actions' => ['view']],
+            'CvLanguageProficiency' => ['module' => 'profile', 'actions' => ['view']],
+        ];
+
+        if (!isset($map[$controller])) {
+            return null;
+        }
+
+        $rule = $map[$controller];
+        if (isset($rule['module'])) {
+            return $rule;
+        }
+
+        if (isset($rule[$method])) {
+            return $rule[$method];
+        }
+
+        return $rule['__default'] ?? null;
+    }
+
+    private function enforceRoutePermission($controller, $method)
+    {
+        // Autenticación y registro público
+        if ($controller === 'Auth') {
+            return;
+        }
+
+        $requirement = $this->getPermissionRequirement($controller, $method);
+        if ($requirement === null) {
+            return;
+        }
+
+        require_once __DIR__ . '/../helpers/PermissionHelper.php';
+
+        $module = $requirement['module'];
+        $actions = $requirement['actions'] ?? ['view'];
+        $fallback = $module === 'permissions' ? '/dashboard' : '/dashboard';
+
+        PermissionHelper::enforceAny($module, $actions, null, $fallback);
+    }
+
     public function __construct()
     {
         // Rutas de autenticación
@@ -139,6 +295,12 @@ class Router
         $this->addRoute('/users/update/{id}', 'User@update');
         $this->addRoute('/users/delete/{id}', 'User@delete');
 
+        // Rutas de administración de permisos
+        $this->addRoute('/permissions', 'Permission@index');
+        $this->addRoute('/permissions/update', 'Permission@update');
+        $this->addRoute('/permissions/export-history-excel', 'Permission@exportHistoryExcel');
+        $this->addRoute('/permissions/export-history-pdf', 'Permission@exportHistoryPdf');
+
         // Rutas de gestión de Portafolios
         $this->addRoute('/portfolios', 'Portfolio@index');
         $this->addRoute('/portfolios/create', 'Portfolio@create');
@@ -250,6 +412,8 @@ class Router
         }
 
         if ($found) {
+            $this->enforceRoutePermission($controller, $method);
+
             $controllerFile = __DIR__ . '/../controllers/' . $controller . 'Controller.php';
 
             if (file_exists($controllerFile)) {

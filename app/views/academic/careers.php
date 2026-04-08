@@ -10,8 +10,12 @@
 <link rel="stylesheet" href="<?php echo BASE_PATH; ?>/css/responsive.css">
 </head>
 <body class="bg-gray-100 font-sans">
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $canManageCareers = PermissionHelper::can('careers', 'manage_all', $roles ?? null);
+    ?>
     <?php require_once __DIR__ . '/../dashboard/index.php'; ?>
-    <?php if ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 4){ ?>   
+    <?php if ($canManageCareers){ ?>   
     <div class="main-content">
         <header class="page-header">
             <h1>Gestión de Carreras</h1>

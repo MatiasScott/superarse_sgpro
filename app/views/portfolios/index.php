@@ -46,9 +46,13 @@
 </head>
 
 <body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 font-sans min-h-screen">
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $canManagePortfolios = PermissionHelper::can('portfolios', 'manage_all', $roles ?? null);
+    ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="main-content">
-        <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 2)) { ?>
+        <?php if ($canManagePortfolios) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">

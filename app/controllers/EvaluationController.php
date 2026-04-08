@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class EvaluationController
 {
@@ -75,6 +76,7 @@ class EvaluationController
 
         $userId = $_SESSION['user_id'];
         $roles = $this->roleModel->getRolesByUserId($userId);
+        PermissionHelper::enforce('evaluations', 'view', $roles, '/dashboard');
 
         // Obtener evaluaciones filtradas según el rol del usuario
         try {
@@ -97,6 +99,7 @@ class EvaluationController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforce('evaluations', 'create', $roles, '/evaluations');
 
         // Profesores: solo usuarios con rol Profesor
         $professors = $this->userModel->getUsersByRole('Profesor');
@@ -116,6 +119,9 @@ class EvaluationController
             header('Location: ' . BASE_PATH . '/');
             exit();
         }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforce('evaluations', 'create', $roles, '/evaluations');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Mostrar datos recibidos para debug

@@ -1,0 +1,297 @@
+{
+    "dashboard": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ]
+    },
+    "profile": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ]
+    },
+    "portfolios": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ],
+        "create": [
+            "Profesor"
+        ],
+        "edit": [
+            "Profesor"
+        ],
+        "delete": [
+            "Profesor"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia"
+        ],
+        "manage_own": [
+            "Profesor"
+        ]
+    },
+    "evaluations": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ],
+        "create": [
+            "Super Administrador",
+            "Coordinador académico"
+        ],
+        "edit": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Profesor"
+        ],
+        "delete": [
+            "Super Administrador",
+            "Coordinador académico"
+        ],
+        "manage_all": [
+            "Super Administrador"
+        ],
+        "manage_own": [
+            "Profesor"
+        ]
+    },
+    "continuity": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ],
+        "create": [
+            "Profesor"
+        ],
+        "edit": [
+            "Profesor"
+        ],
+        "delete": [
+            "Profesor"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano"
+        ],
+        "manage_own": [
+            "Profesor"
+        ]
+    },
+    "assignments": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ],
+        "create": [
+            "Profesor"
+        ],
+        "edit": [
+            "Profesor"
+        ],
+        "delete": [
+            "Profesor"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Coordinador académico"
+        ],
+        "manage_own": [
+            "Profesor"
+        ]
+    },
+    "contracts": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ],
+        "create": [
+            "Profesor"
+        ],
+        "edit": [
+            "Profesor"
+        ],
+        "delete": [
+            "Profesor"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Talento humano"
+        ],
+        "manage_own": [
+            "Profesor"
+        ]
+    },
+    "invoices": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ],
+        "create": [
+            "Profesor"
+        ],
+        "edit": [
+            "Profesor"
+        ],
+        "delete": [
+            "Talento humano"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Talento humano"
+        ],
+        "manage_own": [
+            "Profesor"
+        ]
+    },
+    "reports": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano"
+        ]
+    },
+    "subjects": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano"
+        ],
+        "create": [
+            "Super Administrador",
+            "Coordinador académico"
+        ],
+        "edit": [
+            "Super Administrador",
+            "Coordinador académico"
+        ],
+        "delete": [
+            "Super Administrador",
+            "Coordinador académico"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Coordinador académico"
+        ]
+    },
+    "users": {
+        "view": [
+            "Super Administrador",
+            "Talento humano"
+        ],
+        "create": [
+            "Super Administrador",
+            "Talento humano"
+        ],
+        "edit": [
+            "Super Administrador",
+            "Talento humano"
+        ],
+        "delete": [
+            "Super Administrador",
+            "Talento humano"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Talento humano"
+        ]
+    },
+    "pao": {
+        "view": [
+            "Super Administrador",
+            "Director de docencia"
+        ],
+        "create": [
+            "Super Administrador",
+            "Director de docencia"
+        ],
+        "edit": [
+            "Super Administrador",
+            "Director de docencia"
+        ],
+        "delete": [
+            "Super Administrador",
+            "Director de docencia"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Director de docencia"
+        ]
+    },
+    "careers": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano"
+        ],
+        "create": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia"
+        ],
+        "edit": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia"
+        ],
+        "delete": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia"
+        ]
+    },
+    "notifications": {
+        "view": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano",
+            "Profesor"
+        ]
+    },
+    "permissions": {
+        "view": [
+            "Super Administrador"
+        ],
+        "manage_all": [
+            "Super Administrador"
+        ]
+    }
+}

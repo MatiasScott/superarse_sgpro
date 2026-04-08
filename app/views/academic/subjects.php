@@ -45,10 +45,14 @@
 </head>
 
 <body class="bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-50 font-sans min-h-screen">
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $canManageSubjects = PermissionHelper::can('subjects', 'manage_all', $roles ?? null);
+    ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
 
     <div class="main-content">
-        <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 2)) { ?>
+        <?php if ($canManageSubjects) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -154,7 +158,7 @@
                                         </div>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                        <?php if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] == 1 || $_SESSION['user_role'] == 2)) { ?>
+                                        <?php if ($canManageSubjects) { ?>
                                             <div class="flex items-center space-x-2">
                                                 <a href="<?php echo BASE_PATH; ?>/academic/subjects/edit/<?php echo $subject['id']; ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
                                                     <i class="fas fa-edit"></i>

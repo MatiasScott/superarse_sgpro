@@ -171,12 +171,6 @@
                                        placeholder="0.00" required>
                                 <span class="text-white font-bold text-xl">/ 100</span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <input type="number" step="0.01" id="sumatoria" name="sumatoria" readonly
-                                       class="w-24 px-3 py-2 border-0 rounded-lg bg-white text-gray-800 text-center font-bold text-xl" 
-                                       placeholder="0.00" required>
-                                <span class="text-white font-bold text-xl">/ 5</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -272,8 +266,6 @@
                 const sumatoria = ((autoevaluacion * 0.20) + (coevaluacion20 * 0.20) + (coevaluacion30 * 0.30) + (heteroevaluacion * 0.30));
                 const total = (sumatoria - 1) * 25;
                 document.getElementById('score').value = total.toFixed(2);
-                
-                document.getElementById('sumatoria').value = sumatoria.toFixed(2);
             }
         </script>
     </div>

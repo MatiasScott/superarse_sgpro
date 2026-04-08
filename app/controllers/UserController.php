@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class UserController
 {
@@ -29,11 +30,7 @@ class UserController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        
-        // Verificar que sea Super Administrador o Talento humano
-        $roleNames = array_column($roles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) || 
-                     in_array('Talento humano', $roleNames);
+        PermissionHelper::enforce('users', 'view', $roles, '/dashboard');
         
         
         $users = $this->userModel->getAll();
@@ -51,10 +48,7 @@ class UserController
         // Obtener los roles del USUARIO EN SESIÓN para el menú
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
         
-        // Verificar que sea Super Administrador o Talento humano
-        $roleNames = array_column($roles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) || 
-                     in_array('Talento humano', $roleNames);
+        PermissionHelper::enforce('users', 'manage_all', $roles, '/users');
         
         
         // Obtener TODOS los roles disponibles para el formulario
@@ -72,11 +66,8 @@ class UserController
             exit();
         }
         
-        // Verificar que sea Super Administrador o Talento humano
         $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($sessionRoles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) || 
-                     in_array('Talento humano', $roleNames);
+        PermissionHelper::enforce('users', 'manage_all', $sessionRoles, '/users');
         
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -153,10 +144,7 @@ class UserController
         // Obtener los roles del USUARIO EN SESIÓN para el menú
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
         
-        // Verificar que sea Super Administrador o Talento humano
-        $roleNames = array_column($roles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) || 
-                     in_array('Talento humano', $roleNames);
+        PermissionHelper::enforce('users', 'manage_all', $roles, '/users');
 
 
         // Obtener el usuario que se va a editar
@@ -184,13 +172,8 @@ class UserController
             exit();
         }
         
-        // Verificar que sea Super Administrador o Talento humano
         $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($sessionRoles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) || 
-                     in_array('Talento humano', $roleNames);
-        
-        // Si no tiene acceso, denegar
+        PermissionHelper::enforce('users', 'manage_all', $sessionRoles, '/users');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -288,15 +271,8 @@ class UserController
             exit();
         }
 
-        // Verificar que sea Super Administrador o Talento humano
         $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($sessionRoles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) || in_array('Talento humano', $roleNames);
-
-        if (!$hasAccess) {
-            header('Location: ' . BASE_PATH . '/users');
-            exit();
-        }
+        PermissionHelper::enforce('users', 'manage_all', $sessionRoles, '/users');
 
         try {
             // Obtener usuario a eliminar

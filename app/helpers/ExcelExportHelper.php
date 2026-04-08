@@ -326,4 +326,9 @@ class ExcelExportHelper
 
         self::streamXlsx($rows, 'Docentes', $filename);
     }
+
+    public static function createPermissionHistoryReport($rows, $filename)
+    {
+        self::streamXlsx($rows, 'Historial Permisos', $filename);
+    }
 }
