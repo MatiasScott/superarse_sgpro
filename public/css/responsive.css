@@ -1,0 +1,22 @@
+ /* Asegurar que los elementos no se desborden en móvil y tablet */
+        @media (max-width: 1024px) {
+            .main-content {
+                padding: 1rem;
+                padding-top: 1rem;
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+
+            header {
+                margin-top: 3.5rem !important;
+                margin-bottom: 1rem !important;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .main-content {
+                margin-left: 16rem !important;
+                width: calc(100% - 16rem) !important;
+                padding: 2rem;
+            }
+        }

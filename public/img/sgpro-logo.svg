@@ -1,0 +1,46 @@
+<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icono de personas a la izquierda -->
+  <g>
+    <!-- Persona izquierda -->
+    <circle cx="35" cy="45" r="8" fill="#6B7280"/>
+    <path d="M35 55 C25 55, 20 60, 20 70 L50 70 C50 60, 45 55, 35 55" fill="#6B7280"/>
+    
+    <!-- Persona central (azul y más grande) -->
+    <circle cx="65" cy="40" r="12" fill="#2563EB"/>
+    <path d="M65 55 C50 55, 40 62, 40 75 L90 75 C90 62, 80 55, 65 55" fill="#2563EB"/>
+    
+    <!-- Persona derecha -->
+    <circle cx="95" cy="45" r="8" fill="#6B7280"/>
+    <path d="M95 55 C85 55, 80 60, 80 70 L110 70 C110 60, 105 55, 95 55" fill="#6B7280"/>
+    
+    <!-- Triángulo azul arriba -->
+    <polygon points="65,15 75,30 55,30" fill="#2563EB"/>
+  </g>
+  
+  <!-- Texto SGPRO -->
+  <g>
+    <!-- S -->
+    <path d="M165 35 Q165 25, 175 25 L190 25 Q200 25, 200 35 Q200 40, 190 40 L175 40 Q165 40, 165 45 Q165 50, 175 50 L190 50 Q200 50, 200 60 Q200 70, 190 70 L175 70 Q165 70, 165 60" fill="none" stroke="#6B7280" stroke-width="3"/>
+    
+    <!-- G -->
+    <circle cx="225" cy="47.5" r="22.5" fill="none" stroke="#6B7280" stroke-width="3"/>
+    <path d="M247.5 47.5 L225 47.5 L225 60" stroke="#6B7280" stroke-width="3"/>
+    
+    <!-- P -->
+    <line x1="270" y1="25" x2="270" y2="70" stroke="#6B7280" stroke-width="3"/>
+    <path d="M270 25 L285 25 Q295 25, 295 35 Q295 45, 285 45 L270 45" stroke="#6B7280" stroke-width="3" fill="none"/>
+    
+    <!-- R -->
+    <line x1="320" y1="25" x2="320" y2="70" stroke="#6B7280" stroke-width="3"/>
+    <path d="M320 25 L335 25 Q345 25, 345 35 Q345 45, 335 45 L320 45" stroke="#6B7280" stroke-width="3" fill="none"/>
+    <line x1="335" y1="45" x2="345" y2="70" stroke="#6B7280" stroke-width="3"/>
+    
+    <!-- O -->
+    <circle cx="370" cy="47.5" r="22.5" fill="none" stroke="#6B7280" stroke-width="3"/>
+  </g>
+  
+  <!-- Subtítulo -->
+  <text x="65" y="100" font-family="Inter, Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="start">
+    SISTEMA DE GESTIÓN DE PROFESORES
+  </text>
+</svg>

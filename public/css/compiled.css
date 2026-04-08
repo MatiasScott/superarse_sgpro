@@ -1,0 +1,680 @@
+/* CSS Responsive para SGPRO */
+
+/* FORZAR VISIBILIDAD DE TABLAS - ESTILOS CRÍTICOS */
+table {
+    display: table !important;
+    width: 100% !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-collapse: collapse !important;
+}
+
+.table-responsive {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    margin-bottom: 1rem !important;
+}
+
+.table-responsive table {
+    margin-bottom: 0 !important;
+    min-width: 100% !important;
+}
+
+/* Variables CSS para colores y espaciado */
+:root {
+    --sidebar-width: 16rem; /* 64 en Tailwind = 16rem */
+    --sidebar-collapsed-width: 4rem;
+    --header-height: 4rem;
+    --mobile-breakpoint: 768px;
+    --tablet-breakpoint: 1024px;
+}
+
+/* Reset y base */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+}
+
+/* Sidebar responsive - Siempre expandida, sin colapso */
+.sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    width: var(--sidebar-width) !important;
+    height: 100vh;
+    background-color: #1f2937;
+    color: white;
+    /* Remover transiciones de colapso */
+    transition: none !important;
+    z-index: 1000;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Mantener siempre visible y expandida */
+    transform: translateX(0) !important;
+    will-change: auto;
+}
+
+/* Remover estado colapsado - siempre expandida */
+.sidebar-collapsed {
+    width: var(--sidebar-width) !important;
+}
+
+/* Enlaces de navegación en sidebar */
+.sidebar a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar a:hover {
+    background-color: rgba(107, 114, 128, 0.5);
+}
+
+.sidebar a.active {
+    background-color: #3b82f6;
+    border-left: 4px solid #60a5fa;
+}
+
+/* Botón hamburger para móvil */
+.mobile-menu-button {
+    display: none;
+    z-index: 1001;
+    background: #1f2937;
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-menu-button:hover {
+    background: #374151;
+}
+
+/* Mostrar botón en móvil */
+@media (max-width: 1024px) {
+    .mobile-menu-button {
+        display: block !important;
+    }
+    
+    .sidebar {
+        transform: translateX(-100%) !important;
+        transition: transform 0.3s ease-in-out !important;
+    }
+    
+    .sidebar.open {
+        display: block !important;
+        transform: translateX(0) !important;
+    }
+    
+    .sidebar-overlay {
+        display: none;
+    }
+    
+    .sidebar-overlay.active,
+    .sidebar.open ~ .sidebar-overlay {
+        display: block;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 1rem !important;
+        padding-top: 1rem !important;
+    }
+    
+    .main-content header {
+        margin-top: 3.5rem !important;
+    }
+    
+    .main-content header + main,
+    .main-content header + .space-y-6 {
+        margin-top: 0 !important;
+    }
+}
+
+/* Ocultar botón en desktop */
+@media (min-width: 1025px) {
+    .mobile-menu-button {
+        display: none !important;
+    }
+    
+    .sidebar {
+        display: block !important;
+    }
+    
+    .main-content {
+        margin-left: var(--sidebar-width) !important;
+        width: calc(100% - var(--sidebar-width)) !important;
+    }
+}
+
+/* Overlay para cerrar sidebar en móvil */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Contenido principal responsive - Siempre con margen fijo */
+.main-content {
+    margin-left: var(--sidebar-width) !important;
+    padding: 2rem;
+    /* Remover transiciones que puedan causar cambios */
+    transition: none !important;
+    min-height: 100vh;
+    /* Asegurar que se mantenga en posición */
+    position: relative;
+    width: calc(100% - var(--sidebar-width)) !important;
+    box-sizing: border-box;
+}
+
+/* Mantener el mismo margen incluso en estado "collapsed" */
+.main-content.sidebar-collapsed {
+    margin-left: var(--sidebar-width) !important;
+    width: calc(100% - var(--sidebar-width)) !important;
+}
+
+/* Tablas responsive mejoradas - Siempre visibles */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: white;
+    display: block !important;
+    width: 100%;
+}
+
+.table-responsive table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    display: table !important;
+}
+
+.table-responsive thead {
+    display: table-header-group !important;
+}
+
+.table-responsive tbody {
+    display: table-row-group !important;
+}
+
+.table-responsive thead th {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    z-index: 10;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #374151;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #d1d5db;
+    text-align: left;
+    white-space: nowrap;
+    border-right: 1px solid #e5e7eb;
+    min-width: 100px;
+    display: table-cell !important;
+}
+
+.table-responsive thead th:last-child {
+    border-right: none;
+    min-width: 120px;
+}
+
+.table-responsive tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
+    display: table-row !important;
+}
+
+.table-responsive tbody tr:hover {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.table-responsive tbody tr:last-child {
+    border-bottom: none;
+}
+
+.table-responsive tbody td {
+    padding: 1rem 0.75rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    min-width: 100px;
+    transition: all 0.2s ease;
+    border-right: 1px solid #f3f4f6;
+    display: table-cell !important;
+}
+
+.table-responsive tbody td:last-child {
+    border-right: none;
+    min-width: 120px;
+    max-width: none;
+}
+
+.table-responsive tbody td:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Alternar colores de filas */
+.table-responsive tbody tr:nth-child(even) {
+    background-color: rgba(248, 250, 252, 0.5);
+}
+
+.table-responsive tbody tr:nth-child(even):hover {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+/* Status badges */
+.table-responsive .status-badge,
+.status-badge {
+    display: inline-block;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Contenedor principal */
+.bg-white.rounded-lg.shadow-md.overflow-hidden {
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    position: relative;
+    overflow: visible;
+}
+
+/* Forzar visibilidad en todas las resoluciones */
+.hidden-mobile,
+.show-mobile {
+    display: block !important;
+}
+
+/* Indicador de scroll para móviles */
+.table-responsive::after {
+    content: '← Desliza para ver más →';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    border-radius: 0.375rem 0 0 0;
+    display: none;
+    font-weight: 600;
+    z-index: 5;
+}
+
+/* Media queries para responsive design - Tablas siempre visibles */
+@media (max-width: 1024px) {
+    .table-responsive {
+        border-radius: 0;
+    }
+    
+    .table-responsive table {
+        min-width: 900px;
+    }
+    
+    .table-responsive thead th {
+        padding: 0.875rem 0.625rem;
+        font-size: 0.7rem;
+        min-width: 90px;
+    }
+    
+    .table-responsive tbody td {
+        padding: 0.875rem 0.625rem;
+        font-size: 0.8rem;
+        min-width: 90px;
+        max-width: 180px;
+    }
+    
+    .table-responsive::after {
+        display: block;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        display: block !important;
+        overflow-x: auto !important;
+        white-space: nowrap;
+    }
+    
+    .table-responsive table {
+        min-width: 1000px;
+        display: table !important;
+    }
+    
+    .table-responsive thead th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.65rem;
+        min-width: 80px;
+    }
+    
+    .table-responsive tbody td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.75rem;
+        min-width: 80px;
+        max-width: 150px;
+    }
+    
+    .table-responsive::after {
+        content: '👈 Desliza aquí 👉';
+        font-size: 0.7rem;
+        animation: pulse 2s infinite;
+        display: block;
+    }
+}
+
+/* Animación para el indicador */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Utilidades para mostrar/ocultar elementos - Solo tablas visibles */
+.hidden-mobile {
+    display: block; /* Siempre visible */
+}
+
+.show-mobile {
+    display: none; /* Cards móviles deshabilitadas */
+}
+
+/* Header responsive */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.page-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.page-header a {
+    margin-left: auto;
+}
+
+/* Botones responsive */
+.btn-responsive {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #2563eb;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+}
+
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563;
+}
+
+/* Status badges responsive */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* Media queries para responsive design */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .main-content {
+        padding: 1.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .table-responsive td {
+        max-width: 150px;
+        font-size: 0.875rem;
+    }
+}
+
+/* Móvil - Sidebar mejorada */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+        padding-top: 4rem; /* Espacio para el botón hamburger */
+        width: 100%;
+    }
+    
+    .main-content.sidebar-collapsed {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .page-header {
+        margin-bottom: 1rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.25rem;
+    }
+    
+    /* Ocultar tabla normal y mostrar cards en móvil */
+    .table-responsive table {
+        display: none;
+    }
+    
+    .mobile-card {
+        display: block;
+    }
+    
+    .btn-responsive {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Móvil pequeño */
+@media (max-width: 480px) {
+    .main-content {
+        padding: 0.5rem;
+        padding-top: 3.5rem;
+    }
+    
+    .mobile-card {
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .mobile-card-field {
+        padding: 0.375rem 0;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .mobile-card-label {
+        margin-right: 0;
+        font-size: 0.875rem;
+    }
+    
+    .mobile-card-value {
+        text-align: left;
+        font-size: 0.875rem;
+    }
+}
+
+/* Animaciones y transiciones */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.3s ease-in-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Utilidades para ocultar/mostrar elementos */
+.hidden-mobile {
+    display: block;
+}
+
+.show-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .hidden-mobile {
+        display: none;
+    }
+    
+    .show-mobile {
+        display: block;
+    }
+}
+
+/* Scrollbars personalizadas */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Estilos para formularios responsive */
+.form-responsive {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .form-responsive {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .form-responsive {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.form-field-full {
+    grid-column: 1 / -1;
+}
+
+/* Estilos para notificaciones responsive */
+.notification {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    max-width: 400px;
+    background: white;
+    border-left: 4px solid #10b981;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 1002;
+}
+
+@media (max-width: 768px) {
+    .notification {
+        left: 1rem;
+        right: 1rem;
+        max-width: none;
+    }
+}
