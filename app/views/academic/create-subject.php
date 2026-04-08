@@ -60,6 +60,7 @@
             </div>
 
             <form action="<?php echo BASE_PATH; ?>/academic/subjects/store" method="POST" class="bg-white p-8 rounded-b-2xl shadow-xl space-y-6">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <!-- Sección Nombre de la Materia -->
                 <div style="background-color: rgba(219, 234, 254, 0.5); padding: 1.5rem; border-radius: 0.75rem; border: 2px solid rgb(191, 219, 254);">
@@ -132,6 +133,7 @@
                 <button type="button" id="close-career-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none transition-colors">&times;</button>
             </div>
             <form id="create-career-form" class="space-y-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <div>
                     <label for="new_career_name" class="block text-sm font-semibold text-gray-700 mb-1.5">Nombre de la Carrera</label>
                     <input type="text" id="new_career_name" name="name" required class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: Ingeniería en Sistemas">

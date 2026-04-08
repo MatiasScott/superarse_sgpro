@@ -63,6 +63,7 @@
                     </div>
                     
                     <form action="<?php echo BASE_PATH; ?>/portfolios/update/<?php echo htmlspecialchars($unitPortfolio['id']); ?>" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                        <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                         <input type="hidden" name="unit_number" value="<?php echo $i; ?>">
 
                         <!-- Archivo de Docencia -->

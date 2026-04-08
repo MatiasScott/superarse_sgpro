@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/PaoModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class ContractController
 {
@@ -46,6 +47,7 @@ class ContractController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('contracts', ['create', 'manage_all'], $roles, '/contracts');
         $professors = $this->userModel->getUsersByRole('Profesor');
         $paos = $this->paoModel->getAll();
         $pageTitle = 'Crear Nuevo Contrato';
@@ -55,6 +57,9 @@ class ContractController
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id'] ?? 0);
+            PermissionHelper::enforceAny('contracts', ['create', 'manage_all'], $roles, '/contracts');
+
             $professorId = $_POST['professor_id'] ?? null;
             $paoId = $_POST['pao_id'] ?? null;
             $startDate = $_POST['start_date'] ?? null;
@@ -109,6 +114,14 @@ class ContractController
             exit();
         }
 
+        $canManageAll = PermissionHelper::can('contracts', 'manage_all', $roles);
+        $canEdit = PermissionHelper::can('contracts', 'edit', $roles);
+        $isOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($contract['professor_id'] ?? 0);
+        if (!$canManageAll && !($canEdit && $isOwner)) {
+            header('Location: ' . BASE_PATH . '/contracts');
+            exit();
+        }
+
         $professors = $this->userModel->getUsersByRole('Profesor');
         $paos = $this->paoModel->getAll();
         $pageTitle = 'Editar Contrato: ' . htmlspecialchars($contract['id']);
@@ -133,6 +146,21 @@ class ContractController
     public function update($id)
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $contract = $this->contractModel->find((int)$id);
+            if (!$contract) {
+                header('Location: ' . BASE_PATH . '/contracts');
+                exit();
+            }
+
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id'] ?? 0);
+            $canManageAll = PermissionHelper::can('contracts', 'manage_all', $roles);
+            $canEdit = PermissionHelper::can('contracts', 'edit', $roles);
+            $isOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($contract['professor_id'] ?? 0);
+            if (!$canManageAll && !($canEdit && $isOwner)) {
+                header('Location: ' . BASE_PATH . '/contracts');
+                exit();
+            }
+
             // 1. Obtener los datos del formulario
             $startDate = $_POST['start_date'];
             $endDate = $_POST['end_date'];
@@ -184,6 +212,20 @@ class ContractController
         }
 
         $contract = $this->contractModel->find((int)$id);
+        if (!$contract) {
+            header('Location: ' . BASE_PATH . '/contracts');
+            exit();
+        }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        $canManageAll = PermissionHelper::can('contracts', 'manage_all', $roles);
+        $canDelete = PermissionHelper::can('contracts', 'delete', $roles);
+        $isOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($contract['professor_id'] ?? 0);
+        if (!$canManageAll && !($canDelete && $isOwner)) {
+            header('Location: ' . BASE_PATH . '/contracts');
+            exit();
+        }
+
         if ($contract) {
             if (!empty($contract['file_path']) && file_exists(__DIR__ . '/../../public' . $contract['file_path'])) {
                 unlink(__DIR__ . '/../../public' . $contract['file_path']);

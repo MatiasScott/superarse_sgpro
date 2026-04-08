@@ -315,7 +315,7 @@ class PermissionController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        if (!PermissionHelper::hasAnyRole(['Super Administrador'], $roles)) {
+        if (!PermissionHelper::can('permissions', 'manage_all', $roles)) {
             header('Location: ' . BASE_PATH . '/dashboard');
             exit();
         }

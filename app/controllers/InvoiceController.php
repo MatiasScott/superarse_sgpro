@@ -8,6 +8,8 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/CsrfHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class InvoiceController
 {
@@ -24,6 +26,17 @@ class InvoiceController
         $this->paoModel = new PaoModel();
         $this->roleModel = new RoleModel();
         $this->auditLogModel = new AuditLogModel();
+    }
+
+    private function canManageAllInvoices($roles)
+    {
+        return PermissionHelper::can('invoices', 'manage_all', $roles);
+    }
+
+    private function denyAccessToInvoices()
+    {
+        header('Location: ' . BASE_PATH . '/invoices');
+        exit();
     }
 
     public function index()
@@ -51,10 +64,7 @@ class InvoiceController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        
-        // Talento Humano, Super Administrador y Profesores pueden crear facturas
-        $roleNames = array_column($roles, 'role_name');
-        if (!in_array('Talento humano', $roleNames) && !in_array('Super Administrador', $roleNames) && !in_array('Profesor', $roleNames)) {
+        if (!PermissionHelper::canAny('invoices', ['create', 'manage_all'], $roles)) {
             header('Location: ' . BASE_PATH . '/invoices');
             exit();
         }
@@ -72,6 +82,12 @@ class InvoiceController
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!CsrfHelper::validateRequest()) {
+                http_response_code(419);
+                echo 'Token CSRF inválido o expirado.';
+                exit();
+            }
+
             // Obtener datos directamente del formulario
             $professorId = $_POST['professor_id'] ?? null;
             $paoId = $_POST['pao_id'] ?? null;
@@ -89,6 +105,20 @@ class InvoiceController
             if (!$professorId || !$paoId) {
                 echo "Error: Debe seleccionar un profesor y un PAO.";
                 return;
+            }
+
+            if (!isset($_SESSION['user_id'])) {
+                header('Location: ' . BASE_PATH . '/');
+                exit();
+            }
+
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+            $canManageAll = $this->canManageAllInvoices($roles);
+            if (!PermissionHelper::canAny('invoices', ['create', 'manage_all'], $roles)) {
+                $this->denyAccessToInvoices();
+            }
+            if (!$canManageAll && (int)$professorId !== (int)$_SESSION['user_id']) {
+                $this->denyAccessToInvoices();
             }
 
             // Manejar archivo de factura PDF
@@ -181,10 +211,7 @@ class InvoiceController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($roles, 'role_name');
-        
-        // Talento Humano, Super Administrador y Profesores pueden editar facturas
-        if (!in_array('Talento humano', $roleNames) && !in_array('Super Administrador', $roleNames) && !in_array('Profesor', $roleNames)) {
+        if (!PermissionHelper::canAny('invoices', ['edit', 'manage_all'], $roles)) {
             header('Location: ' . BASE_PATH . '/invoices');
             exit();
         }
@@ -222,10 +249,30 @@ class InvoiceController
     public function update($id)
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!CsrfHelper::validateRequest()) {
+                http_response_code(419);
+                echo 'Token CSRF inválido o expirado.';
+                exit();
+            }
+
             $oldInvoice = $this->invoiceModel->find($id);
             if (!$oldInvoice) {
                 echo "Factura no encontrada.";
                 exit();
+            }
+
+            if (!isset($_SESSION['user_id'])) {
+                header('Location: ' . BASE_PATH . '/');
+                exit();
+            }
+
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+            $canManageAll = $this->canManageAllInvoices($roles);
+            if (!PermissionHelper::canAny('invoices', ['edit', 'manage_all'], $roles)) {
+                $this->denyAccessToInvoices();
+            }
+            if (!$canManageAll && (int)$oldInvoice['professor_id'] !== (int)$_SESSION['user_id']) {
+                $this->denyAccessToInvoices();
             }
 
             $unitNumber = $_POST['unit_number'] ?? $oldInvoice['unit_number'];
@@ -324,8 +371,23 @@ class InvoiceController
             exit();
         }
 
+        if (!CsrfHelper::validateRequest()) {
+            http_response_code(419);
+            echo 'Token CSRF inválido o expirado.';
+            exit();
+        }
+
         $invoice = $this->invoiceModel->find((int)$id);
         if ($invoice) {
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+            $canManageAll = $this->canManageAllInvoices($roles);
+            if (!PermissionHelper::canAny('invoices', ['delete', 'manage_all'], $roles)) {
+                $this->denyAccessToInvoices();
+            }
+            if (!$canManageAll && (int)$invoice['professor_id'] !== (int)$_SESSION['user_id']) {
+                $this->denyAccessToInvoices();
+            }
+
             $files = ['invoice_file_path', 'receipt_file_path'];
             foreach ($files as $field) {
                 if (!empty($invoice[$field]) && file_exists(__DIR__ . '/../../public' . $invoice[$field])) {

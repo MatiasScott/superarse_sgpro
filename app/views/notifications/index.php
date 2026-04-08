@@ -58,12 +58,13 @@
                         
                         <!-- Marcar todas como leídas -->
                         <?php if ($unreadCount > 0): ?>
-                        <a href="<?= BASE_PATH ?>/notifications/mark-all-read" 
-                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                           onclick="return confirm('¿Marcar todas las notificaciones como leídas?')">
-                            <i class="fas fa-check-double mr-2"></i>
-                            Marcar todas como leídas
-                        </a>
+                        <form action="<?= BASE_PATH ?>/notifications/mark-all-read" method="POST" onsubmit="return confirm('¿Marcar todas las notificaciones como leídas?')">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-check-double mr-2"></i>
+                                Marcar todas como leídas
+                            </button>
+                        </form>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -142,12 +143,13 @@
                                         <!-- Acciones -->
                                         <div class="flex-shrink-0 ml-4">
                                             <?php if (!$notification['is_read']): ?>
-                                            <a href="<?= BASE_PATH ?>/notifications/mark-read/<?= $notification['id'] ?>" 
-                                               class="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                               title="Marcar como leída">
-                                                <i class="fas fa-eye mr-1"></i>
-                                                Marcar como leída
-                                            </a>
+                                            <form action="<?= BASE_PATH ?>/notifications/mark-read/<?= $notification['id'] ?>" method="POST">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                                                <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm font-medium" title="Marcar como leída">
+                                                    <i class="fas fa-eye mr-1"></i>
+                                                    Marcar como leída
+                                                </button>
+                                            </form>
                                             <?php endif; ?>
                                         </div>
                                     </div>

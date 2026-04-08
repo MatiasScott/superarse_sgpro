@@ -14,7 +14,10 @@
 
 <body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 font-sans min-h-screen">
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
-    <?php $isProfesor = isset($roles) && in_array('Profesor', array_column($roles, 'role_name')); ?>
+    <?php
+    require_once __DIR__ . '/../../helpers/PermissionHelper.php';
+    $isProfesor = !PermissionHelper::can('evaluations', 'manage_all', $roles ?? null);
+    ?>
 
     <div class="main-content">
         <header class="mb-8">
@@ -33,6 +36,7 @@
 
         <main class="max-w-4xl mx-auto">
             <form action="<?php echo BASE_PATH; ?>/evaluations/update/<?php echo htmlspecialchars($evaluation['id']); ?>" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
 
                 <!-- Información Básica -->
                 <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">

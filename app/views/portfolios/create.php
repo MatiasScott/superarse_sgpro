@@ -46,6 +46,7 @@
 
                 <!-- Formulario -->
                 <form action="<?php echo BASE_PATH; ?>/portfolios/store" method="POST" class="p-8 space-y-6">
+                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                     <!-- Profesor -->
                     <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-2 border-blue-200">
                         <label for="professor_id" class="flex items-center space-x-3 text-base font-bold text-gray-800 mb-3">

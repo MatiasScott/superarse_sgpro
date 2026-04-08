@@ -24,4 +24,11 @@ class CareerModel extends BaseModel {
         $stmt->bindParam(2, $id);
         return $stmt->execute();
     }
+
+    public function delete($id) {
+        $query = "DELETE FROM " . $this->table . " WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(1, $id);
+        return $stmt->execute();
+    }
 }

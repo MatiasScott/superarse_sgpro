@@ -14,6 +14,7 @@
 
 <body class="bg-gray-100 font-sans">
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
+    <?php require_once __DIR__ . '/../../helpers/PermissionHelper.php'; ?>
 
     <div class="main-content">
         <main class="max-w-4xl mx-auto">
@@ -31,20 +32,11 @@
             </div>
 
             <form action="<?php echo BASE_PATH; ?>/invoices/update/<?php echo htmlspecialchars($invoice['id']); ?>" method="POST" enctype="multipart/form-data" class="bg-white p-8 rounded-b-2xl shadow-xl space-y-6">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <?php
-                // Detectar si el usuario actual es un profesor
-                $currentUserId = $_SESSION['user_id'] ?? null;
-                $isProfessor = false;
-                
-                // Verificar si el usuario tiene el rol de Profesor
-                if (isset($_SESSION['user_id'])) {
-                    require_once __DIR__ . '/../../models/RoleModel.php';
-                    $roleModel = new RoleModel();
-                    $roles = $roleModel->getRolesByUserId($_SESSION['user_id']);
-                    $roleNames = array_column($roles, 'role_name');
-                    $isProfessor = in_array('Profesor', $roleNames);
-                }
+                // Si no puede gestionar todo, se comporta como usuario con edición de su propia factura.
+                $isProfessor = !PermissionHelper::can('invoices', 'manage_all', $roles ?? null);
                 ?>
                 
                 <!-- Sección Información General (Solo Lectura) -->

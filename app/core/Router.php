@@ -5,6 +5,91 @@ class Router
 {
     private $routes = [];
 
+    private function getRouteSecurityRequirement($controller, $method)
+    {
+        if ($method === 'delete') {
+            return ['require_post' => true, 'require_csrf' => true];
+        }
+
+        $rules = [
+            'Auth' => [
+                'logout' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Notification' => [
+                'markAsRead' => ['require_post' => true, 'require_csrf' => true],
+                'markAllAsRead' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'User' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Pao' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Subject' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Assignment' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Contract' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Evaluation' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Continuity' => [
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Invoice' => [
+                'store' => ['require_post' => true, 'require_csrf' => true],
+                'update' => ['require_post' => true, 'require_csrf' => true],
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+            'Portfolio' => [
+                'store' => ['require_post' => true, 'require_csrf' => true],
+                'update' => ['require_post' => true, 'require_csrf' => true],
+                'updateType' => ['require_post' => true, 'require_csrf' => true],
+                'delete' => ['require_post' => true, 'require_csrf' => true],
+            ],
+        ];
+
+        if (!isset($rules[$controller]) || !isset($rules[$controller][$method])) {
+            return null;
+        }
+
+        return $rules[$controller][$method];
+    }
+
+    private function enforceRouteSecurity($controller, $method)
+    {
+        $requirement = $this->getRouteSecurityRequirement($controller, $method);
+        if ($requirement === null) {
+            return;
+        }
+
+        $requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $requirePost = !empty($requirement['require_post']);
+
+        if ($requirePost && $requestMethod !== 'POST') {
+            http_response_code(405);
+            $statusCode = 405;
+            $errorMessage = 'Esta operación requiere método POST.';
+            require_once __DIR__ . '/../views/errors/http_error.php';
+            exit();
+        }
+
+        if (!empty($requirement['require_csrf']) && $requestMethod === 'POST') {
+            require_once __DIR__ . '/../helpers/CsrfHelper.php';
+            if (!CsrfHelper::validateRequest()) {
+                http_response_code(419);
+                $statusCode = 419;
+                $errorMessage = 'Token CSRF inválido o expirado.';
+                require_once __DIR__ . '/../views/errors/http_error.php';
+                exit();
+            }
+        }
+    }
+
     private function getPermissionRequirement($controller, $method)
     {
         $map = [
@@ -34,57 +119,57 @@ class Router
             'Portfolio' => [
                 'index' => ['module' => 'portfolios', 'actions' => ['view']],
                 'viewByProfessorPao' => ['module' => 'portfolios', 'actions' => ['view']],
-                'create' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'store' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'edit' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'update' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'updateType' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'delete' => ['module' => 'portfolios', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                'create' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all']],
+                'updateType' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'portfolios', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'portfolios', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Evaluation' => [
                 'index' => ['module' => 'evaluations', 'actions' => ['view']],
-                'create' => ['module' => 'evaluations', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'store' => ['module' => 'evaluations', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'edit' => ['module' => 'evaluations', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'update' => ['module' => 'evaluations', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'delete' => ['module' => 'evaluations', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                'create' => ['module' => 'evaluations', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'evaluations', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'evaluations', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'evaluations', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'evaluations', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'evaluations', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Continuity' => [
                 'index' => ['module' => 'continuity', 'actions' => ['view']],
-                'create' => ['module' => 'continuity', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'store' => ['module' => 'continuity', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'edit' => ['module' => 'continuity', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'update' => ['module' => 'continuity', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'delete' => ['module' => 'continuity', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                'create' => ['module' => 'continuity', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'continuity', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'continuity', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'continuity', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'continuity', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'continuity', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Assignment' => [
                 'index' => ['module' => 'assignments', 'actions' => ['view']],
-                'create' => ['module' => 'assignments', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'store' => ['module' => 'assignments', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'edit' => ['module' => 'assignments', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'update' => ['module' => 'assignments', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'delete' => ['module' => 'assignments', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                'create' => ['module' => 'assignments', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'assignments', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'assignments', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'assignments', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'assignments', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'assignments', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Contract' => [
                 'index' => ['module' => 'contracts', 'actions' => ['view']],
-                'create' => ['module' => 'contracts', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'store' => ['module' => 'contracts', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'edit' => ['module' => 'contracts', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'update' => ['module' => 'contracts', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'delete' => ['module' => 'contracts', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                'create' => ['module' => 'contracts', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'contracts', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'contracts', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'contracts', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'contracts', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'contracts', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Invoice' => [
                 'index' => ['module' => 'invoices', 'actions' => ['view']],
-                'create' => ['module' => 'invoices', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'store' => ['module' => 'invoices', 'actions' => ['create', 'manage_all', 'manage_own']],
-                'edit' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'update' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all', 'manage_own']],
-                'delete' => ['module' => 'invoices', 'actions' => ['delete', 'manage_all', 'manage_own']],
+                'create' => ['module' => 'invoices', 'actions' => ['create', 'manage_all']],
+                'store' => ['module' => 'invoices', 'actions' => ['create', 'manage_all']],
+                'edit' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all']],
+                'update' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all']],
+                'delete' => ['module' => 'invoices', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'invoices', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Subject' => [
@@ -356,6 +441,7 @@ class Router
         $this->addRoute('/academic/careers/store', 'Career@store');
         $this->addRoute('/academic/careers/edit/{id}', 'Career@edit');
         $this->addRoute('/academic/careers/update/{id}', 'Career@update');
+        $this->addRoute('/academic/careers/delete/{id}', 'Career@delete');
         $this->addRoute('/academic/careers/quick-store', 'Career@quickStore');
 
         // Rutas de gestión de Asignaturas
@@ -412,6 +498,7 @@ class Router
         }
 
         if ($found) {
+            $this->enforceRouteSecurity($controller, $method);
             $this->enforceRoutePermission($controller, $method);
 
             $controllerFile = __DIR__ . '/../controllers/' . $controller . 'Controller.php';

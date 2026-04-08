@@ -55,6 +55,7 @@
 
             <!-- Formulario -->
             <form action="<?php echo BASE_PATH; ?>/register/store" method="POST" class="space-y-5">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <!-- Nombre -->
                 <div>

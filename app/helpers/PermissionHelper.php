@@ -102,6 +102,7 @@ class PermissionHelper
             ],
             'notifications' => [
                 'view' => self::allRoles(),
+                'manage_all' => [self::ROLE_SUPER_ADMIN, self::ROLE_COORDINADOR, self::ROLE_DIRECTOR, self::ROLE_TALENTO_HUMANO],
             ],
             'permissions' => [
                 'view' => [self::ROLE_SUPER_ADMIN],
@@ -136,7 +137,7 @@ class PermissionHelper
             return self::$cachedPermissions;
         }
 
-        self::$cachedPermissions = self::normalizeMatrix($decoded, $default);
+        self::$cachedPermissions = self::normalizeMatrix($decoded, $default, true);
         return self::$cachedPermissions;
     }
 
@@ -156,7 +157,7 @@ class PermissionHelper
         ];
     }
 
-    private static function normalizeMatrix($input, $default)
+    private static function normalizeMatrix($input, $default, $useDefaultWhenMissing = true)
     {
         $allowedRoles = self::allRoles();
         $normalized = [];
@@ -164,7 +165,15 @@ class PermissionHelper
         foreach ($default as $module => $actions) {
             $normalized[$module] = [];
             foreach ($actions as $action => $defaultRoles) {
-                $inputRoles = $input[$module][$action] ?? $defaultRoles;
+                $moduleExists = array_key_exists($module, $input) && is_array($input[$module]);
+                $actionExists = $moduleExists && array_key_exists($action, $input[$module]);
+
+                if ($actionExists) {
+                    $inputRoles = $input[$module][$action];
+                } else {
+                    $inputRoles = $useDefaultWhenMissing ? $defaultRoles : [];
+                }
+
                 if (!is_array($inputRoles)) {
                     $inputRoles = [];
                 }
@@ -197,7 +206,7 @@ class PermissionHelper
         }
 
         $default = self::defaultPermissions();
-        $normalized = self::normalizeMatrix($matrix, $default);
+        $normalized = self::normalizeMatrix($matrix, $default, false);
         $json = json_encode($normalized, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         if ($json === false) {

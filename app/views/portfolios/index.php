@@ -49,10 +49,14 @@
     <?php
     require_once __DIR__ . '/../../helpers/PermissionHelper.php';
     $canManagePortfolios = PermissionHelper::can('portfolios', 'manage_all', $roles ?? null);
+    $canCreatePortfolios = PermissionHelper::can('portfolios', 'create', $roles ?? null);
+    $canEditPortfolios = PermissionHelper::can('portfolios', 'edit', $roles ?? null);
+    $canDeletePortfolios = PermissionHelper::can('portfolios', 'delete', $roles ?? null);
+    $hasManageOwnPortfolios = PermissionHelper::can('portfolios', 'manage_own', $roles ?? null);
     ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="main-content">
-        <?php if ($canManagePortfolios) { ?>
+        <?php if ($canManagePortfolios || $canCreatePortfolios) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -150,28 +154,23 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center space-x-2">
                                             <i class="fas fa-bookmark text-purple-500"></i>
-                                            <span class="text-sm text-gray-700"><?php echo htmlspecialchars($portfolio['pao_name']); ?></span>
+                                            <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($portfolio['pao_name']); ?></span>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <?php
-                                        // Obtener el tipo de portafolio (asumimos que todas las unidades tienen el mismo tipo)
-                                        $portfolioType = !empty($portfolio['units']) ? $portfolio['units'][0]['portfolio_type'] : 'academico';
-                                        
-                                        // Contar unidades aprobadas
+                                        $portfolioType = $portfolio['portfolio_type'] ?? 'academico';
                                         $approvedUnits = count(array_filter($portfolio['units'], function ($unit) {
                                             return !empty($unit['unit_approved']) && $unit['unit_approved'] == 1;
                                         }));
-                                        
-                                        // Contar unidades con archivos (según el tipo)
+
                                         $unitsWithFiles = 0;
                                         foreach ($portfolio['units'] as $unit) {
                                             $hasFiles = false;
                                             $docenciaColumn = 'docencia_' . $portfolioType . '_path';
                                             $practicasColumn = 'practicas_' . $portfolioType . '_path';
                                             $titulacionColumn = 'titulacion_' . $portfolioType . '_path';
-                                            
-                                            // Verificar según el tipo de portafolio
+
                                             if ($portfolioType === 'academico') {
                                                 $hasFiles = !empty($unit[$docenciaColumn]);
                                             } elseif ($portfolioType === 'practico') {
@@ -179,7 +178,7 @@
                                             } elseif ($portfolioType === 'titulacion') {
                                                 $hasFiles = !empty($unit[$docenciaColumn]) && !empty($unit[$practicasColumn]) && !empty($unit[$titulacionColumn]);
                                             }
-                                            
+
                                             if ($hasFiles) {
                                                 $unitsWithFiles++;
                                             }
@@ -193,31 +192,29 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        <?php if (!empty($roleNames) && in_array('Talento humano', $roleNames)): ?>
-                                            <div class="flex items-center justify-end space-x-2">
-                                                <!-- Acciones ocultas para Talento humano -->
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="flex items-center justify-end space-x-2">
-                                                <?php 
-                                                // El profesor puede editar solo su portafolio, los administradores pueden editar todos
-                                                $canEdit = $canManageAll || ($portfolio['professor_id'] == $_SESSION['user_id']);
-                                                if ($canEdit): 
-                                                ?>
-                                                    <a href="<?php echo BASE_PATH; ?>/portfolios/edit/<?php echo htmlspecialchars($portfolio['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
-                                                        <i class="fas fa-edit"></i>
-                                                        <span>Editar</span>
-                                                    </a>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($canManageAll): ?>
-                                                    <a href="<?php echo BASE_PATH; ?>/portfolios/delete/<?php echo htmlspecialchars($portfolio['id']); ?>" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2" onclick="return confirm('¿Está seguro de eliminar este portafolio?')">
+                                        <?php
+                                        $isOwnerPortfolio = (int)($portfolio['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
+                                        $canEditRow = $canManagePortfolios || ($canEditPortfolios && (!$hasManageOwnPortfolios || $isOwnerPortfolio));
+                                        $canDeleteRow = $canManagePortfolios || ($canDeletePortfolios && (!$hasManageOwnPortfolios || $isOwnerPortfolio));
+                                        ?>
+                                        <div class="flex items-center justify-end space-x-2">
+                                            <?php if ($canEditRow): ?>
+                                                <a href="<?php echo BASE_PATH; ?>/portfolios/edit/<?php echo htmlspecialchars($portfolio['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Editar</span>
+                                                </a>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($canDeleteRow): ?>
+                                                <form action="<?php echo BASE_PATH; ?>/portfolios/delete/<?php echo htmlspecialchars($portfolio['id']); ?>" method="POST" onsubmit="return confirm('¿Está seguro de eliminar este portafolio?')">
+                                                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                                    <button type="submit" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
                                                         <i class="fas fa-trash-alt"></i>
                                                         <span>Eliminar</span>
-                                                    </a>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php endif; ?>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

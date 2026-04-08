@@ -34,6 +34,7 @@
             </div>
 
             <form action="<?php echo BASE_PATH; ?>/pao/update/<?php echo htmlspecialchars($pao['id']); ?>" method="POST" class="bg-white p-8 rounded-b-2xl shadow-xl space-y-6">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <!-- Sección Nombre del PAO -->
                 <div style="background-color: rgba(243, 232, 255, 0.5); padding: 1.5rem; border-radius: 0.75rem; border: 2px solid rgb(233, 213, 255);">

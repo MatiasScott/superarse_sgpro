@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class AssignmentController
 {
@@ -50,6 +51,7 @@ class AssignmentController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('assignments', ['create', 'manage_all'], $roles, '/academic/assignments');
         $professors = $this->userModel->getUsersByRole('Profesor');
         $subjects = $this->subjectModel->getAll();
         $paos = $this->paoModel->getAll();
@@ -61,6 +63,9 @@ class AssignmentController
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id'] ?? 0);
+            PermissionHelper::enforceAny('assignments', ['create', 'manage_all'], $roles, '/academic/assignments');
+
             $professorId = $_POST['professor_id'] ?? null;
             $subjectId = $_POST['subject_id'] ?? null;
             $paoId = $_POST['pao_id'] ?? null;
@@ -103,7 +108,15 @@ class AssignmentController
         $assignment = $this->assignmentModel->find($id);
 
         if (!$assignment) {
-            header('Location: ' . BASE_PATH . '/assignments');
+            header('Location: ' . BASE_PATH . '/academic/assignments');
+            exit();
+        }
+
+        $canManageAll = PermissionHelper::can('assignments', 'manage_all', $roles);
+        $canEdit = PermissionHelper::can('assignments', 'edit', $roles);
+        $isOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($assignment['professor_id'] ?? 0);
+        if (!$canManageAll && !($canEdit && $isOwner)) {
+            header('Location: ' . BASE_PATH . '/academic/assignments');
             exit();
         }
 
@@ -125,7 +138,16 @@ class AssignmentController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $oldAssignment = $this->assignmentModel->find($id);
             if (!$oldAssignment) {
-                echo "Asignación no encontrada.";
+                header('Location: ' . BASE_PATH . '/academic/assignments');
+                exit();
+            }
+
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id'] ?? 0);
+            $canManageAll = PermissionHelper::can('assignments', 'manage_all', $roles);
+            $canEdit = PermissionHelper::can('assignments', 'edit', $roles);
+            $isOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($oldAssignment['professor_id'] ?? 0);
+            if (!$canManageAll && !($canEdit && $isOwner)) {
+                header('Location: ' . BASE_PATH . '/academic/assignments');
                 exit();
             }
 
@@ -156,6 +178,20 @@ class AssignmentController
         }
 
         $assignment = $this->assignmentModel->find((int)$id);
+        if (!$assignment) {
+            header('Location: ' . BASE_PATH . '/academic/assignments');
+            exit();
+        }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        $canManageAll = PermissionHelper::can('assignments', 'manage_all', $roles);
+        $canDelete = PermissionHelper::can('assignments', 'delete', $roles);
+        $isOwner = (int)($_SESSION['user_id'] ?? 0) === (int)($assignment['professor_id'] ?? 0);
+        if (!$canManageAll && !($canDelete && $isOwner)) {
+            header('Location: ' . BASE_PATH . '/academic/assignments');
+            exit();
+        }
+
         if ($assignment) {
             $query = "DELETE FROM professor_assignments WHERE id = ?";
             $stmt = $this->assignmentModel->getConnection()->prepare($query);

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../models/CareerModel.php';
 require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class CareerController
 {
@@ -24,20 +25,7 @@ class CareerController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        
-        // Verificar que NO sea solo profesor
-        $roleNames = array_column($roles, 'role_name');
-        $isOnlyProfessor = in_array('Profesor', $roleNames) && 
-                          !in_array('Coordinador académico', $roleNames) && 
-                          !in_array('Director de docencia', $roleNames) && 
-                          !in_array('Super Administrador', $roleNames) &&
-                          !in_array('Talento humano', $roleNames);
-        
-        // Si es solo profesor, denegar acceso
-        if ($isOnlyProfessor) {
-            http_response_code(403);
-            die("Acceso denegado: No tiene permisos para acceder a este módulo.");
-        }
+        PermissionHelper::enforce('careers', 'view', $roles, '/dashboard');
         
         $careers = $this->careerModel->getAll();
         $pageTitle = 'Gestión de Carreras';
@@ -52,20 +40,7 @@ class CareerController
         }
         
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        
-        // Verificar que NO sea solo profesor
-        $roleNames = array_column($roles, 'role_name');
-        $isOnlyProfessor = in_array('Profesor', $roleNames) && 
-                          !in_array('Coordinador académico', $roleNames) && 
-                          !in_array('Director de docencia', $roleNames) && 
-                          !in_array('Super Administrador', $roleNames) &&
-                          !in_array('Talento humano', $roleNames);
-        
-        // Si es solo profesor, denegar acceso
-        if ($isOnlyProfessor) {
-            http_response_code(403);
-            die("Acceso denegado: No tiene permisos para acceder a este módulo.");
-        }
+        PermissionHelper::enforce('careers', 'create', $roles, '/academic/careers');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
@@ -92,20 +67,7 @@ class CareerController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        
-        // Verificar que NO sea solo profesor
-        $roleNames = array_column($roles, 'role_name');
-        $isOnlyProfessor = in_array('Profesor', $roleNames) && 
-                          !in_array('Coordinador académico', $roleNames) && 
-                          !in_array('Director de docencia', $roleNames) && 
-                          !in_array('Super Administrador', $roleNames) &&
-                          !in_array('Talento humano', $roleNames);
-        
-        // Si es solo profesor, denegar acceso
-        if ($isOnlyProfessor) {
-            http_response_code(403);
-            die("Acceso denegado: No tiene permisos para acceder a este módulo.");
-        }
+        PermissionHelper::enforce('careers', 'edit', $roles, '/academic/careers');
         
         $career = $this->careerModel->find($id);
 
@@ -126,20 +88,7 @@ class CareerController
         }
         
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        
-        // Verificar que NO sea solo profesor
-        $roleNames = array_column($roles, 'role_name');
-        $isOnlyProfessor = in_array('Profesor', $roleNames) && 
-                          !in_array('Coordinador académico', $roleNames) && 
-                          !in_array('Director de docencia', $roleNames) && 
-                          !in_array('Super Administrador', $roleNames) &&
-                          !in_array('Talento humano', $roleNames);
-        
-        // Si es solo profesor, denegar acceso
-        if ($isOnlyProfessor) {
-            http_response_code(403);
-            die("Acceso denegado: No tiene permisos para acceder a este módulo.");
-        }
+        PermissionHelper::enforce('careers', 'edit', $roles, '/academic/careers');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
@@ -162,6 +111,19 @@ class CareerController
 
     public function quickStore()
     {
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            exit();
+        }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        if (!PermissionHelper::canAny('careers', ['create', 'manage_all'], $roles)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'No autorizado']);
+            exit();
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
 
@@ -174,5 +136,24 @@ class CareerController
                 exit();
             }
         }
+    }
+
+    public function delete($id)
+    {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_PATH . '/');
+            exit();
+        }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('careers', ['delete', 'manage_all'], $roles, '/academic/careers');
+
+        $career = $this->careerModel->find((int)$id);
+        if ($career && $this->careerModel->delete((int)$id)) {
+            $this->auditLogModel->logAction($_SESSION['user_id'], 'DELETE', 'careers', (int)$id, $career, null);
+        }
+
+        header('Location: ' . BASE_PATH . '/academic/careers');
+        exit();
     }
 }

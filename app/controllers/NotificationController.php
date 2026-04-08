@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/NotificationModel.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class NotificationController
 {
@@ -31,13 +32,10 @@ class NotificationController
 
         $userId = $_SESSION['user_id'];
         $roles = $this->roleModel->getRolesByUserId($userId);
-        $roleNames = array_column($roles, 'role_name');
-        
-        // Verificar si el usuario tiene un rol administrativo que puede ver todas las notificaciones
-        $canViewAll = in_array('Super Administrador', $roleNames) || 
-                      in_array('Director de docencia', $roleNames) ||
-                      in_array('Coordinador académico', $roleNames) ||
-                      in_array('Talento humano', $roleNames);
+        PermissionHelper::enforce('notifications', 'view', $roles, '/dashboard');
+
+        // Si tiene manage_all en notificaciones, puede ver el stream global
+        $canViewAll = PermissionHelper::can('notifications', 'manage_all', $roles);
         
         // Obtener parámetros de paginación
         $page = $_GET['page'] ?? 1;

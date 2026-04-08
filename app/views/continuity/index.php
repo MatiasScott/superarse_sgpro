@@ -48,11 +48,14 @@
     <?php
     require_once __DIR__ . '/../../helpers/PermissionHelper.php';
     $canManageContinuity = PermissionHelper::can('continuity', 'manage_all', $roles ?? null);
-    $isProfessorContinuity = PermissionHelper::hasAnyRole(['Profesor'], $roles ?? null);
+    $canCreateContinuity = PermissionHelper::can('continuity', 'create', $roles ?? null);
+    $canEditContinuity = PermissionHelper::can('continuity', 'edit', $roles ?? null);
+    $canDeleteContinuity = PermissionHelper::can('continuity', 'delete', $roles ?? null);
+    $hasManageOwnContinuity = PermissionHelper::can('continuity', 'manage_own', $roles ?? null);
     ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="main-content">
-        <?php if ($canManageContinuity) { ?>
+        <?php if ($canManageContinuity || $canCreateContinuity) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -240,7 +243,16 @@
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <?php
-                                        $canEdit = $canManageContinuity || ($isProfessorContinuity && $continuity['docencia_decision'] === null);
+                                        $isOwnerContinuity = (int)($continuity['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
+                                        // Si tiene manage_own (Profesor): solo puede editar la suya y solo si no decidió aún.
+                                        // Si tiene edit sin manage_own (ej: Coordinador): puede editar todas.
+                                        if ($hasManageOwnContinuity) {
+                                            $canEdit = $canManageContinuity || ($canEditContinuity && $isOwnerContinuity && $continuity['docencia_decision'] === null);
+                                            $canDeleteRow = $canManageContinuity || ($canDeleteContinuity && $isOwnerContinuity);
+                                        } else {
+                                            $canEdit = $canManageContinuity || $canEditContinuity;
+                                            $canDeleteRow = $canManageContinuity || $canDeleteContinuity;
+                                        }
                                         ?>
                                         <div class="flex items-center justify-end space-x-2">
                                             <?php if ($canEdit): ?>
@@ -249,11 +261,14 @@
                                                     <span>Editar</span>
                                                 </a>
                                             <?php endif; ?>
-                                            <?php if ($canManageContinuity): ?>
-                                                <a href="<?php echo BASE_PATH; ?>/continuity/delete/<?php echo htmlspecialchars($continuity['id']); ?>" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2" onclick="return confirm('¿Está seguro de eliminar este registro de continuidad?')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                    <span>Eliminar</span>
-                                                </a>
+                                            <?php if ($canDeleteRow): ?>
+                                                <form action="<?php echo BASE_PATH; ?>/continuity/delete/<?php echo htmlspecialchars($continuity['id']); ?>" method="POST" onsubmit="return confirm('¿Está seguro de eliminar este registro de continuidad?')">
+                                                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                                    <button type="submit" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                        <span>Eliminar</span>
+                                                    </button>
+                                                </form>
                                             <?php endif; ?>
                                             <?php if (!$canEdit && $isProfessorContinuity && $continuity['docencia_decision'] !== null): ?>
                                                 <span class="inline-flex items-center space-x-2 text-gray-400 italic bg-gray-100 px-3 py-2 rounded-lg">

@@ -84,6 +84,7 @@
                 </div>
             </div>
             <form action="<?php echo BASE_PATH; ?>/permissions/update" method="POST" class="p-6 space-y-6">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <?php foreach ($permissionMatrix as $module => $actions): ?>
                     <section class="border border-gray-200 rounded-xl overflow-hidden">
                         <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">

@@ -112,6 +112,30 @@ class NotificationHelper
     }
 
     /**
+     * Notificación para actualización de PAO
+     */
+    public static function notifyPaoUpdate($paoId, $paoName)
+    {
+        $title = "PAO Actualizado";
+        $message = self::getNotificationModel()->formatNotificationMessage('UPDATE', 'pao', ['name' => $paoName]);
+        $type = self::getNotificationModel()->getNotificationType('UPDATE');
+
+        self::notifyAdministrators($title, $message, $type, 'pao', $paoId, 'UPDATE');
+    }
+
+    /**
+     * Notificación para eliminación de PAO
+     */
+    public static function notifyPaoDelete($paoId, $paoName)
+    {
+        $title = "PAO Eliminado";
+        $message = self::getNotificationModel()->formatNotificationMessage('DELETE', 'pao', ['name' => $paoName]);
+        $type = self::getNotificationModel()->getNotificationType('DELETE');
+
+        self::notifyAdministrators($title, $message, $type, 'pao', $paoId, 'DELETE');
+    }
+
+    /**
      * Notificación para creación de asignatura
      */
     public static function notifySubjectCreate($subjectId, $subjectName)

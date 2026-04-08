@@ -25,15 +25,11 @@
             "Talento humano",
             "Profesor"
         ],
-        "create": [
-            "Profesor"
-        ],
+        "create": [],
         "edit": [
             "Profesor"
         ],
-        "delete": [
-            "Profesor"
-        ],
+        "delete": [],
         "manage_all": [
             "Super Administrador",
             "Coordinador académico",
@@ -79,15 +75,11 @@
             "Talento humano",
             "Profesor"
         ],
-        "create": [
-            "Profesor"
-        ],
+        "create": [],
         "edit": [
             "Profesor"
         ],
-        "delete": [
-            "Profesor"
-        ],
+        "delete": [],
         "manage_all": [
             "Super Administrador",
             "Coordinador académico",
@@ -106,15 +98,9 @@
             "Talento humano",
             "Profesor"
         ],
-        "create": [
-            "Profesor"
-        ],
-        "edit": [
-            "Profesor"
-        ],
-        "delete": [
-            "Profesor"
-        ],
+        "create": [],
+        "edit": [],
+        "delete": [],
         "manage_all": [
             "Super Administrador",
             "Coordinador académico"
@@ -131,14 +117,10 @@
             "Talento humano",
             "Profesor"
         ],
-        "create": [
-            "Profesor"
-        ],
-        "edit": [
-            "Profesor"
-        ],
+        "create": [],
+        "edit": [],
         "delete": [
-            "Profesor"
+            "Talento humano"
         ],
         "manage_all": [
             "Super Administrador",
@@ -284,6 +266,12 @@
             "Director de docencia",
             "Talento humano",
             "Profesor"
+        ],
+        "manage_all": [
+            "Super Administrador",
+            "Coordinador académico",
+            "Director de docencia",
+            "Talento humano"
         ]
     },
     "permissions": {

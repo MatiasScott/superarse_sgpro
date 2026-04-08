@@ -31,6 +31,7 @@
 
         <main class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
             <form action="<?php echo BASE_PATH; ?>/invoices/store" method="POST" enctype="multipart/form-data" class="p-8">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <?php
                 // Detectar si el usuario actual es un profesor (verificando si está en la lista de profesores)

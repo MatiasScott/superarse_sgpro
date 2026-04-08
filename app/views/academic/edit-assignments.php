@@ -31,6 +31,7 @@
 
         <main class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
             <form action="<?php echo BASE_PATH; ?>/academic/assignments/update/<?php echo htmlspecialchars($assignment['id']); ?>" method="POST" class="p-8">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <!-- Información de la Asignación (Solo Lectura) -->
                 <div class="bg-gray-50 rounded-2xl p-6 mb-6 border border-gray-200">

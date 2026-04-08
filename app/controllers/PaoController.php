@@ -7,7 +7,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php'; // Agregamos el modelo de auditoría
 require_once __DIR__ . '/../helpers/ActivityHelper.php'; // Agregamos el helper de actividades
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
-require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class PaoController
 {
@@ -32,17 +32,7 @@ class PaoController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-
-        // Verificar que sea Super Administrador o Director de docencia
-        $roleNames = array_column($roles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) ||
-            in_array('Director de docencia', $roleNames);
-
-        // Si no tiene acceso, denegar
-        if (!$hasAccess) {
-            http_response_code(403);
-            die("Acceso denegado: Solo Super Administrador y Director de docencia pueden acceder a este módulo.");
-        }
+        PermissionHelper::enforce('pao', 'view', $roles, '/dashboard');
 
         $paos = $this->paoModel->getAll();
         $pageTitle = 'Gestión de PAO';
@@ -57,17 +47,7 @@ class PaoController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-
-        // Verificar que sea Super Administrador o Director de docencia
-        $roleNames = array_column($roles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) ||
-            in_array('Director de docencia', $roleNames);
-
-        // Si no tiene acceso, denegar
-        if (!$hasAccess) {
-            http_response_code(403);
-            die("Acceso denegado: Solo Super Administrador y Director de docencia pueden acceder a este módulo.");
-        }
+        PermissionHelper::enforce('pao', 'create', $roles, '/pao');
 
         $pageTitle = 'Crear PAO';
         require_once __DIR__ . '/../views/pao/create.php';
@@ -80,17 +60,8 @@ class PaoController
             exit();
         }
 
-        // Verificar que sea Super Administrador o Director de docencia
         $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($sessionRoles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) ||
-            in_array('Director de docencia', $roleNames);
-
-        // Si no tiene acceso, denegar
-        if (!$hasAccess) {
-            http_response_code(403);
-            die("Acceso denegado: Solo Super Administrador y Director de docencia pueden acceder a este módulo.");
-        }
+        PermissionHelper::enforce('pao', 'create', $sessionRoles, '/pao');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
@@ -132,17 +103,7 @@ class PaoController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-
-        // Verificar que sea Super Administrador o Director de docencia
-        $roleNames = array_column($roles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) ||
-            in_array('Director de docencia', $roleNames);
-
-        // Si no tiene acceso, denegar
-        if (!$hasAccess) {
-            http_response_code(403);
-            die("Acceso denegado: Solo Super Administrador y Director de docencia pueden acceder a este módulo.");
-        }
+        PermissionHelper::enforce('pao', 'edit', $roles, '/pao');
 
         $pao = $this->paoModel->find($id);
 
@@ -162,17 +123,8 @@ class PaoController
             exit();
         }
 
-        // Verificar que sea Super Administrador o Director de docencia
         $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($sessionRoles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) ||
-            in_array('Director de docencia', $roleNames);
-
-        // Si no tiene acceso, denegar
-        if (!$hasAccess) {
-            http_response_code(403);
-            die("Acceso denegado: Solo Super Administrador y Director de docencia pueden acceder a este módulo.");
-        }
+        PermissionHelper::enforce('pao', 'edit', $sessionRoles, '/pao');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
@@ -205,17 +157,8 @@ class PaoController
             exit();
         }
 
-        // Verificar que sea Super Administrador o Director de docencia
         $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($sessionRoles, 'role_name');
-        $hasAccess = in_array('Super Administrador', $roleNames) ||
-            in_array('Director de docencia', $roleNames);
-
-        // Si no tiene acceso, denegar
-        if (!$hasAccess) {
-            http_response_code(403);
-            die("Acceso denegado: Solo Super Administrador y Director de docencia pueden acceder a este módulo.");
-        }
+        PermissionHelper::enforce('pao', 'delete', $sessionRoles, '/pao');
 
         $pao = $this->paoModel->find($id);
         if ($pao) {

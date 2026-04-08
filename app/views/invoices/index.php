@@ -50,10 +50,11 @@
 <body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 font-sans min-h-screen">
     <?php
     require_once __DIR__ . '/../../helpers/PermissionHelper.php';
-    $isProfesor = PermissionHelper::hasAnyRole(['Profesor'], $roles ?? null);
     $canManageInvoices = PermissionHelper::can('invoices', 'manage_all', $roles ?? null);
-    $canCreateInvoice = $canManageInvoices || $isProfesor;
-    $canEditInvoiceRow = $canManageInvoices || $isProfesor;
+    $canCreateInvoice = PermissionHelper::can('invoices', 'create', $roles ?? null) || $canManageInvoices;
+    $canEditInvoices = PermissionHelper::can('invoices', 'edit', $roles ?? null);
+    $canDeleteInvoices = PermissionHelper::can('invoices', 'delete', $roles ?? null);
+    $hasManageOwnInvoices = PermissionHelper::can('invoices', 'manage_own', $roles ?? null);
     ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
 
@@ -306,17 +307,29 @@
                                         </span>
 
                                     </td>
-                                    <?php if ($canEditInvoiceRow) { ?>
+                                    <?php
+                                        $isOwnerInvoice = (int)($invoice['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
+                                        $canEditRow = $canManageInvoices || ($canEditInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
+                                        $canDeleteRow = $canManageInvoices || ($canDeleteInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
+                                    ?>
+                                    <?php if ($canEditRow || $canDeleteRow) { ?>
                                         <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                             <div class="flex items-center justify-end space-x-2">
-                                                <a href="<?php echo BASE_PATH; ?>/invoices/edit/<?php echo htmlspecialchars($invoice['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
-                                                    <i class="fas fa-edit"></i>
-                                                    <span>Editar</span>
-                                                </a>
-                                                <a href="<?php echo BASE_PATH; ?>/invoices/delete/<?php echo htmlspecialchars($invoice['id']); ?>" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2" onclick="return confirm('¿Está seguro de eliminar esta factura?')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                    <span>Eliminar</span>
-                                                </a>
+                                                <?php if ($canEditRow): ?>
+                                                    <a href="<?php echo BASE_PATH; ?>/invoices/edit/<?php echo htmlspecialchars($invoice['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                        <i class="fas fa-edit"></i>
+                                                        <span>Editar</span>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if ($canDeleteRow): ?>
+                                                    <form action="<?php echo BASE_PATH; ?>/invoices/delete/<?php echo htmlspecialchars($invoice['id']); ?>" method="POST" onsubmit="return confirm('¿Está seguro de eliminar esta factura?')">
+                                                        <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                                        <button type="submit" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                            <span>Eliminar</span>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         <?php } ?>
                                         </td>

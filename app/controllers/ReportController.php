@@ -22,6 +22,7 @@ require_once __DIR__ . '/../models/CvOutreachProjectsModel.php';
 require_once __DIR__ . '/../models/CvLanguageProficiencyModel.php';
 require_once __DIR__ . '/../helpers/ExcelExportHelper.php';
 require_once __DIR__ . '/../helpers/PdfExportHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class ReportController
 {
@@ -73,10 +74,7 @@ class ReportController
      */
     public function index()
     {
-        if (!$this->isAuthorizedForReports()) {
-            echo json_encode(['error' => 'No autorizado']);
-            return;
-        }
+        PermissionHelper::enforce('reports', 'view', null, '/dashboard');
 
         // Obtener roles del usuario actual para el sidebar
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
@@ -90,10 +88,7 @@ class ReportController
      */
     public function reportCvsByUser()
     {
-        if (!$this->isAuthorized(['Super Administrador', 'Director de docencia', 'Talento humano'])) {
-            echo json_encode(['error' => 'No autorizado']);
-            return;
-        }
+        PermissionHelper::enforce('reports', 'view', null, '/dashboard');
 
         // Este reporte consolida únicamente CV de profesores activos.
         $users = $this->userModel->getUsersWithRole('Profesor');
@@ -218,10 +213,7 @@ class ReportController
      */
     public function reportBillingByUser()
     {
-        if (!$this->isAuthorized(['Super Administrador', 'Talento humano', 'Director de docencia'])) {
-            echo json_encode(['error' => 'No autorizado']);
-            return;
-        }
+        PermissionHelper::enforce('reports', 'view', null, '/dashboard');
 
         // Capturar los parámetros de año y nombre si se proporcionan
         $year = isset($_GET['year']) && $_GET['year'] !== '' ? $_GET['year'] : null;
@@ -273,10 +265,7 @@ class ReportController
      */
     public function reportPortfolios()
     {
-        if (!$this->isAuthorized(['Super Administrador', 'Director de docencia', 'Coordinador académico'])) {
-            echo json_encode(['error' => 'No autorizado']);
-            return;
-        }
+        PermissionHelper::enforce('reports', 'view', null, '/dashboard');
 
 
         // Obtener portafolios agrupados con unidades (estructura esperada por el PDF)
@@ -299,10 +288,7 @@ class ReportController
      */
     public function reportTeachersByDedication()
     {
-        if (!$this->isAuthorized(['Super Administrador', 'Talento humano', 'Director de docencia'])) {
-            echo json_encode(['error' => 'No autorizado']);
-            return;
-        }
+        PermissionHelper::enforce('reports', 'view', null, '/dashboard');
 
         $searchName = isset($_GET['name']) && $_GET['name'] !== '' ? trim($_GET['name']) : null;
         $selectedDedication = isset($_GET['dedicacion']) && $_GET['dedicacion'] !== ''
@@ -518,45 +504,5 @@ class ReportController
         return array_values($users);
     }
 
-    /**
-     * Verifica si el usuario actual está autorizado para ver reportes
-     */
-    private function isAuthorizedForReports()
-    {
-        return $this->isAuthorized(['Super Administrador', 'Talento humano', 'Director de docencia', 'Coordinador académico']);
-    }
 
-    /**
-     * Verifica si el usuario actual está autorizado
-     */
-    private function isAuthorized($roles)
-    {
-        if (!isset($_SESSION['user_id'])) {
-            return false;
-        }
-
-        $userRoles = $this->getUserRoles($_SESSION['user_id']);
-        foreach ($userRoles as $role) {
-            if (in_array($role['role_name'], $roles)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Obtiene los roles del usuario actual
-     */
-    private function getUserRoles($userId)
-    {
-        $db = $this->userModel->getConnection();
-        $stmt = $db->prepare("
-            SELECT ur.* FROM user_roles ur
-            JOIN user_roles_pivot urp ON ur.id = urp.role_id
-            WHERE urp.user_id = ?
-        ");
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
 }

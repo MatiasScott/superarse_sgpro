@@ -49,6 +49,9 @@
     <?php
     require_once __DIR__ . '/../../helpers/PermissionHelper.php';
     $canManagePao = PermissionHelper::can('pao', 'manage_all', $roles ?? null);
+    $canCreatePao = PermissionHelper::can('pao', 'create', $roles ?? null);
+    $canEditPao = PermissionHelper::can('pao', 'edit', $roles ?? null);
+    $canDeletePao = PermissionHelper::can('pao', 'delete', $roles ?? null);
     ?>
 
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
@@ -66,7 +69,7 @@
                             <p class="text-emerald-100 mt-1">Administre los Periodos Académicos Ordinarios</p>
                         </div>
                     </div>
-                    <?php if ($canManagePao) { ?>
+                    <?php if ($canManagePao || $canCreatePao) { ?>
                         <a href="<?php echo BASE_PATH; ?>/pao/create" class="bg-white hover:bg-gray-50 text-emerald-600 font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 w-full md:w-auto">
                             <i class="fas fa-plus-circle text-xl"></i>
                             <span>Crear Nuevo PAO</span>
@@ -158,16 +161,23 @@
                                         </div>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                        <?php if ($canManagePao): ?>
+                                        <?php if ($canManagePao || $canEditPao || $canDeletePao): ?>
                                             <div class="flex items-center space-x-2">
-                                                <a href="<?php echo BASE_PATH; ?>/pao/edit/<?php echo htmlspecialchars($pao['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
-                                                    <i class="fas fa-edit"></i>
-                                                    <span>Editar</span>
-                                                </a>
-                                                <a href="<?php echo BASE_PATH; ?>/pao/delete/<?php echo htmlspecialchars($pao['id']); ?>" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2" onclick="return confirm('¿Está seguro de eliminar este PAO?')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                    <span>Eliminar</span>
-                                                </a>
+                                                <?php if ($canManagePao || $canEditPao): ?>
+                                                    <a href="<?php echo BASE_PATH; ?>/pao/edit/<?php echo htmlspecialchars($pao['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                        <i class="fas fa-edit"></i>
+                                                        <span>Editar</span>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if ($canManagePao || $canDeletePao): ?>
+                                                    <form action="<?php echo BASE_PATH; ?>/pao/delete/<?php echo htmlspecialchars($pao['id']); ?>" method="POST" onsubmit="return confirm('¿Está seguro de eliminar este PAO?')">
+                                                        <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                                        <button type="submit" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                            <span>Eliminar</span>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
                                     </td>

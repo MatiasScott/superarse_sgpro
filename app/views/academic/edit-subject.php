@@ -31,6 +31,7 @@
             </div>
 
             <form action="<?php echo BASE_PATH; ?>/academic/subjects/update/<?php echo htmlspecialchars($subject['id']); ?>" method="POST" class="bg-white p-8 rounded-b-2xl shadow-xl space-y-6">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <!-- Sección Nombre de la Materia -->
                 <div style="background-color: rgba(219, 234, 254, 0.5); padding: 1.5rem; border-radius: 0.75rem; border: 2px solid rgb(191, 219, 254);">

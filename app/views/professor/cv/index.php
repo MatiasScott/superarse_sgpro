@@ -195,6 +195,7 @@
                     <p class="text-sm text-gray-600 mt-2 ml-13">Complete su información personal y de contacto</p>
                 </div>
                 <form action="<?php echo BASE_PATH; ?>/professor/cv/store" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <div>
                             <label class="block text-gray-700 text-xs font-semibold mb-1" for="surnames">Apellidos:</label>
@@ -859,6 +860,7 @@
                 <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="educationForm" action="<?php echo BASE_PATH; ?>/professor/education/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="educationId">
                 <div class="mb-3">
                     <label for="education_level" class="block text-gray-700 text-sm font-semibold mb-1.5">Nivel:</label>
@@ -901,6 +903,7 @@
                 <button id="closeGestionModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="gestionForm" action="<?php echo BASE_PATH; ?>/professor/academic-management/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="gestionId">
                 <div class="mb-3">
                     <label for="gestion_start_date" class="block text-gray-700 text-sm font-semibold mb-1.5">Desde:</label>
@@ -947,6 +950,7 @@
                 <button id="closeProfesionalModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="profesionalForm" action="<?php echo BASE_PATH; ?>/professor/professional-experience/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="profesionalId">
                 <div class="mb-3">
                     <label for="profesional_start_date" class="block text-gray-700 text-sm font-semibold mb-1.5">Desde:</label>
@@ -993,6 +997,7 @@
                 <button id="closeDocenteModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="docenteForm" action="<?php echo BASE_PATH; ?>/professor/teaching-experience/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="docenteId">
                 <div class="mb-3">
                     <label for="docente_start_date" class="block text-gray-700 text-sm font-semibold mb-1.5">Desde:</label>
@@ -1039,6 +1044,7 @@
                 <button id="closeProyectosModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="proyectosForm" action="<?php echo BASE_PATH; ?>/professor/research-projects/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="proyectosId">
                 <div class="mb-3">
                     <label for="proyectos_denomination" class="block text-gray-700 text-sm font-semibold mb-1.5">Denominación:</label>
@@ -1089,6 +1095,7 @@
                 <button id="closePonenciasModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="ponenciasForm" action="<?php echo BASE_PATH; ?>/professor/presentations/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="ponenciasId">
                 <div class="mb-3">
                     <label for="ponencias_event_name" class="block text-gray-700 text-sm font-semibold mb-1.5">Nombre del Evento:</label>
@@ -1131,6 +1138,7 @@
                 <button id="closePublicacionesModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="publicacionesForm" action="<?php echo BASE_PATH; ?>/professor/publications/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="publicacionesId">
                 <div class="mb-3">
                     <label for="publicaciones_production_type" class="block text-gray-700 text-sm font-semibold mb-1.5">Tipo:</label>
@@ -1177,6 +1185,7 @@
                 <button id="closeVinculacionModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="vinculacionForm" action="<?php echo BASE_PATH; ?>/professor/outreach-projects/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="vinculacionId">
                 <div class="mb-3">
                     <label for="vinculacion_institution_name" class="block text-gray-700 text-sm font-semibold mb-1.5">Institución:</label>
@@ -1211,6 +1220,7 @@
                 <button id="closeTesisModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="tesisForm" action="<?php echo BASE_PATH; ?>/professor/thesis-direction/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="tesisId">
                 <div class="mb-3">
                     <label for="tesis_student_name" class="block text-gray-700 text-sm font-semibold mb-1.5">Nombre del Alumno:</label>
@@ -1253,6 +1263,7 @@
                 <button id="closeLaboralesModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="laboralesForm" action="<?php echo BASE_PATH; ?>/professor/work-references/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="laboralesId">
                 <div class="mb-3">
                     <label for="laborales_contact_person" class="block text-gray-700 text-sm font-semibold mb-1.5">Persona de Contacto:</label>
@@ -1295,6 +1306,7 @@
                 <button id="closePersonalesModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
             <form id="personalesForm" action="<?php echo BASE_PATH; ?>/professor/personal-references/store" method="POST" class="px-6 py-4">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="personalesId">
                 <div class="mb-3">
                     <label for="personales_contact_person" class="block text-gray-700 text-sm font-semibold mb-1.5">Persona de Contacto:</label>
@@ -1462,6 +1474,7 @@
 
         // Función unificada para eliminar
         function deleteRecord(id, type) {
+            const csrfToken = <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?>;
             const messages = {
                 'education': '¿Está seguro de eliminar este registro de educación?',
                 'teaching-experience': '¿Está seguro de eliminar esta experiencia docente?',
@@ -1477,7 +1490,18 @@
             };
 
             if (confirm(messages[type] || '¿Está seguro de eliminar este registro?')) {
-                window.location.href = '<?php echo BASE_PATH; ?>/professor/' + type + '/delete/' + id;
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '<?php echo BASE_PATH; ?>/professor/' + type + '/delete/' + id;
+
+                const tokenField = document.createElement('input');
+                tokenField.type = 'hidden';
+                tokenField.name = '_csrf';
+                tokenField.value = csrfToken;
+                form.appendChild(tokenField);
+
+                document.body.appendChild(form);
+                form.submit();
             }
         }
     </script>

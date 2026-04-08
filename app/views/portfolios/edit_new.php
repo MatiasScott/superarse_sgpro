@@ -38,6 +38,7 @@
                 </div>
                 
                 <form id="portfolio-type-form" action="<?php echo BASE_PATH; ?>/portfolios/update-type" method="POST" class="grid md:grid-cols-3 gap-4">
+                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                     <input type="hidden" name="professor_id" value="<?php echo $professor['id']; ?>">
                     <input type="hidden" name="pao_id" value="<?php echo $pao['id']; ?>">
                     
@@ -89,10 +90,7 @@
             <!-- Unidades del Portafolio -->
             <?php 
             $roles = isset($_SESSION['user_id']) ? $this->roleModel->getRolesByUserId($_SESSION['user_id']) : [];
-            $roleNames = array_column($roles, 'role_name');
-            $canApprove = in_array('Super Administrador', $roleNames) || 
-                         in_array('Director de docencia', $roleNames) ||
-                         in_array('Coordinador académico', $roleNames);
+            $canApprove = PermissionHelper::can('portfolios', 'manage_all', $roles);
             
             for ($i = 1; $i <= 4; $i++): 
                 $unitPortfolio = array_filter($portfolioData, function($item) use ($i) {
@@ -125,6 +123,7 @@
                     </div>
                     
                     <form action="<?php echo BASE_PATH; ?>/portfolios/update/<?php echo $unitPortfolio ? $unitPortfolio['id'] : 'new'; ?>" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                        <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                         <input type="hidden" name="unit_number" value="<?php echo $i; ?>">
                         <input type="hidden" name="professor_id" value="<?php echo $professor['id']; ?>">
                         <input type="hidden" name="pao_id" value="<?php echo $pao['id']; ?>">

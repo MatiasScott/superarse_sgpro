@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../helpers/PermissionHelper.php';
+require_once __DIR__ . '/../helpers/CsrfHelper.php';
 
 class AuthController
 {
@@ -30,6 +31,15 @@ class AuthController
     public function login()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!CsrfHelper::validateRequest()) {
+                http_response_code(419);
+                $error = "Token CSRF inválido o expirado.";
+                $pageTitle = 'Login - SGPRO';
+                $roles = $this->roleModel->getAll();
+                require_once __DIR__ . '/../views/auth/login.php';
+                return;
+            }
+
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
 
@@ -41,6 +51,7 @@ class AuthController
             $roleIds = array_values(array_unique(array_column($userrole, 'id')));
 
             if ($user && password_verify($password, $user['password'])) {
+                session_regenerate_id(true);
                 // Autenticación exitosa
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
@@ -60,6 +71,7 @@ class AuthController
                     $newHash = password_hash($password, PASSWORD_DEFAULT);
                     $this->userModel->updatePassword($user['id'], $newHash);
 
+                    session_regenerate_id(true);
                     // Setear sesión
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['user_name'] = $user['name'];
@@ -92,6 +104,14 @@ class AuthController
     public function register()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!CsrfHelper::validateRequest()) {
+                $error = "Token CSRF inválido o expirado.";
+                $roles = $this->roleModel->getAll();
+                $pageTitle = 'Registro - SGPRO';
+                require_once __DIR__ . '/../views/auth/register.php';
+                return;
+            }
+
             $name = $_POST['name'] ?? '';
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
@@ -169,6 +189,12 @@ class AuthController
 
     public function logout()
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !CsrfHelper::validateRequest()) {
+            http_response_code(419);
+            require_once __DIR__ . '/../views/errors/http_error.php';
+            exit();
+        }
+
         unset($_SESSION['role_names'], $_SESSION['role_ids']);
         session_destroy();
         header('Location: ' . BASE_PATH . '/');

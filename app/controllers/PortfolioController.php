@@ -8,6 +8,8 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/CsrfHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class PortfolioController
 {
@@ -26,6 +28,11 @@ class PortfolioController
         $this->auditLogModel = new AuditLogModel();
     }
 
+    private function canManageAllPortfolios($roles)
+    {
+        return PermissionHelper::can('portfolios', 'manage_all', $roles);
+    }
+
     public function index()
     {
         if (!isset($_SESSION['user_id'])) {
@@ -33,16 +40,14 @@ class PortfolioController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($roles, 'role_name');
+        PermissionHelper::enforce('portfolios', 'view', $roles, '/dashboard');
         
         // Obtiene una lista de portafolios según el rol del usuario
         $portfolios = $this->portfolioModel->getPortfoliosWithDetails($_SESSION['user_id'], $roles);
         $pageTitle = 'Gestión de Portafolios';
         
         // Pasar información de permisos a la vista
-        $canManageAll = in_array('Super Administrador', $roleNames) || 
-                       in_array('Director de docencia', $roleNames) ||
-                       in_array('Coordinador académico', $roleNames);
+        $canManageAll = $this->canManageAllPortfolios($roles);
         
         require_once __DIR__ . '/../views/portfolios/index.php';
     }
@@ -54,6 +59,7 @@ class PortfolioController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('portfolios', ['create', 'manage_all'], $roles, '/portfolios');
         $professors = $this->userModel->getUsersByRole('Profesor');
         $paos = $this->paoModel->getAll();
         $pageTitle = 'Crear Nuevo Portafolio';
@@ -67,10 +73,27 @@ class PortfolioController
             exit();
         }
 
+        if (!CsrfHelper::validateRequest()) {
+            http_response_code(419);
+            echo 'Token CSRF inválido o expirado.';
+            exit();
+        }
+
         $professorId = $_POST['professor_id'];
         $paoId = $_POST['pao_id'];
         $unitNumber = $_POST['unit_number'] ?? 1;
         $portfolioType = $_POST['portfolio_type'] ?? 'academico';
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        $canManageAll = $this->canManageAllPortfolios($roles);
+        if (!PermissionHelper::canAny('portfolios', ['create', 'manage_all'], $roles)) {
+            header('Location: ' . BASE_PATH . '/portfolios');
+            exit();
+        }
+        if (!$canManageAll && (int)$professorId !== (int)$_SESSION['user_id']) {
+            header('Location: ' . BASE_PATH . '/portfolios');
+            exit();
+        }
 
         // Verificar si el portafolio ya existe para esta unidad específica
         $existing = $this->portfolioModel->findByKeys($professorId, $paoId, $unitNumber);
@@ -157,11 +180,7 @@ class PortfolioController
         }
 
         // Manejar aprobación de unidad (solo para administradores)
-        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($roles, 'role_name');
-        $canApprove = in_array('Super Administrador', $roleNames) || 
-                     in_array('Director de docencia', $roleNames) ||
-                     in_array('Coordinador académico', $roleNames);
+        $canApprove = $canManageAll;
 
         if ($canApprove && isset($_POST['unit_approved'])) {
             $data['unit_approved'] = 1;
@@ -198,7 +217,10 @@ class PortfolioController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($roles, 'role_name');
+        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all'], $roles)) {
+            header('Location: ' . BASE_PATH . '/portfolios');
+            exit();
+        }
 
         $portfolio = $this->portfolioModel->find($id);
         if (!$portfolio) {
@@ -210,9 +232,7 @@ class PortfolioController
         $paoId = $portfolio['pao_id'];
 
         // Verificar que el usuario tenga permiso para editar este portafolio
-        $canEditAll = in_array('Super Administrador', $roleNames) || 
-                     in_array('Director de docencia', $roleNames) ||
-                     in_array('Coordinador académico', $roleNames);
+        $canEditAll = $this->canManageAllPortfolios($roles);
         
         // Si es profesor, solo puede editar su propio portafolio
         if (!$canEditAll && $professorId != $_SESSION['user_id']) {
@@ -242,6 +262,12 @@ class PortfolioController
             exit();
         }
 
+        if (!CsrfHelper::validateRequest()) {
+            http_response_code(419);
+            echo 'Token CSRF inválido o expirado.';
+            exit();
+        }
+
         $oldPortfolio = $this->portfolioModel->find($id);
         if (!$oldPortfolio) {
             header('Location: ' . BASE_PATH . '/portfolios');
@@ -250,10 +276,11 @@ class PortfolioController
 
         // Verificar permisos - profesor solo puede actualizar su propio portafolio
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($roles, 'role_name');
-        $canEditAll = in_array('Super Administrador', $roleNames) || 
-                     in_array('Director de docencia', $roleNames) ||
-                     in_array('Coordinador académico', $roleNames);
+        $canEditAll = $this->canManageAllPortfolios($roles);
+        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all'], $roles)) {
+            header('Location: ' . BASE_PATH . '/portfolios');
+            exit();
+        }
         
         if (!$canEditAll && $oldPortfolio['professor_id'] != $_SESSION['user_id']) {
             header('Location: ' . BASE_PATH . '/portfolios');
@@ -262,9 +289,7 @@ class PortfolioController
 
         // Verificar si la unidad está aprobada - si es así, no permitir cambios
         if ($oldPortfolio['unit_approved'] == 1) {
-            $canApprove = in_array('Super Administrador', $roleNames) || 
-                         in_array('Director de docencia', $roleNames) ||
-                         in_array('Coordinador académico', $roleNames);
+            $canApprove = $canEditAll;
             
             // Si no es admin o no está intentando desaprobar, rechazar cambios
             if (!$canApprove || !isset($_POST['unit_approved']) || $_POST['unit_approved'] == '1') {
@@ -371,10 +396,7 @@ class PortfolioController
 
         // Manejar aprobación de unidad (solo para administradores)
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        $roleNames = array_column($roles, 'role_name');
-        $canApprove = in_array('Super Administrador', $roleNames) || 
-                     in_array('Director de docencia', $roleNames) ||
-                     in_array('Coordinador académico', $roleNames);
+        $canApprove = $this->canManageAllPortfolios($roles);
         
         if ($canApprove && isset($_POST['unit_approved'])) {
             $data['unit_approved'] = $_POST['unit_approved'] == '1' ? 1 : 0;
@@ -399,6 +421,12 @@ class PortfolioController
             exit();
         }
 
+        if (!CsrfHelper::validateRequest()) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'message' => 'Token CSRF inválido o expirado']);
+            exit();
+        }
+
         $professorId = $_POST['professor_id'] ?? null;
         $paoId = $_POST['pao_id'] ?? null;
         $portfolioType = $_POST['portfolio_type'] ?? 'academico';
@@ -406,6 +434,19 @@ class PortfolioController
         if (!$professorId || !$paoId) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Faltan parámetros']);
+            exit();
+        }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        $canEditAll = $this->canManageAllPortfolios($roles);
+        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all'], $roles)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'No autorizado']);
+            exit();
+        }
+        if (!$canEditAll && (int)$professorId !== (int)$_SESSION['user_id']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'No autorizado']);
             exit();
         }
 
@@ -454,8 +495,25 @@ class PortfolioController
             exit();
         }
 
+        if (!CsrfHelper::validateRequest()) {
+            http_response_code(419);
+            echo 'Token CSRF inválido o expirado.';
+            exit();
+        }
+
         $portfolio = $this->portfolioModel->find((int)$id);
         if ($portfolio) {
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+            $canDeleteAll = $this->canManageAllPortfolios($roles);
+            if (!PermissionHelper::canAny('portfolios', ['delete', 'manage_all'], $roles)) {
+                header('Location: ' . BASE_PATH . '/portfolios');
+                exit();
+            }
+            if (!$canDeleteAll && (int)$portfolio['professor_id'] !== (int)$_SESSION['user_id']) {
+                header('Location: ' . BASE_PATH . '/portfolios');
+                exit();
+            }
+
             $professorId = $portfolio['professor_id'];
             $paoId = $portfolio['pao_id'];
 

@@ -4,12 +4,14 @@
 // Carga el archivo de configuración y la clase del enrutador
 require_once __DIR__ . '/../app/config/config.php';
 require_once __DIR__ . '/../app/core/Router.php';
+require_once __DIR__ . '/../app/helpers/CsrfHelper.php';
 
 // Carga la clase de conexión a la base de datos
 require_once __DIR__ . '/../app/core/Database.php';
 
 // Inicia la sesión
 session_start();
+CsrfHelper::ensureToken();
 
 // Configura el tiempo de inactividad a 5 minutos (300 segundos)
 $inactive_time = 300;

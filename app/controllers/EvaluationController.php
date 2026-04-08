@@ -243,10 +243,13 @@ class EvaluationController
             exit();
         }
 
-        // PERMISO EDITAR: Super Administrador o Profesor dueño de la evaluación
-        $isSuperAdmin = $this->hasRole($roles, ['Super Administrador']);
-        $isOwnerProfessor = $this->hasRole($roles, ['Profesor']) && $evaluation['professor_id'] == $userId;
-        if (!$isSuperAdmin && !$isOwnerProfessor) {
+        $canManageAll = PermissionHelper::can('evaluations', 'manage_all', $roles);
+        $canEditAction = PermissionHelper::can('evaluations', 'edit', $roles);
+        $isProfessor = $this->hasRole($roles, ['Profesor']);
+        $isOwnerProfessor = $isProfessor && (int)$evaluation['professor_id'] === (int)$userId;
+        $canEditRecord = $canManageAll || ($canEditAction && (!$isProfessor || $isOwnerProfessor));
+
+        if (!$canEditRecord) {
             $this->denyAccess();
         }
 
@@ -303,12 +306,13 @@ class EvaluationController
             exit();
         }
 
-        // PERMISO EDITAR (Update): Super Administrador o Profesor dueño
-        $isSuperAdmin = $this->hasRole($roles, ['Super Administrador']);
+        $canManageAll = PermissionHelper::can('evaluations', 'manage_all', $roles);
+        $canEditAction = PermissionHelper::can('evaluations', 'edit', $roles);
         $isProfessor = $this->hasRole($roles, ['Profesor']);
-        $isOwnerProfessor = $isProfessor && $oldEvaluation['professor_id'] == $userId;
+        $isOwnerProfessor = $isProfessor && (int)$oldEvaluation['professor_id'] === (int)$userId;
+        $canEditRecord = $canManageAll || ($canEditAction && (!$isProfessor || $isOwnerProfessor));
 
-        if (!$isSuperAdmin && !$isOwnerProfessor) {
+        if (!$canEditRecord) {
             $this->denyAccess();
         }
 
@@ -341,8 +345,8 @@ class EvaluationController
                 'final_status' => $_POST['final_status'] ?? 'En proceso'
             ];
 
-            // Restricción docente: solo puede agregar comentarios.
-            if ($isProfessor) {
+            // Restricción docente sin manage_all: solo puede agregar comentarios.
+            if ($isProfessor && !$canManageAll) {
                 $data['professor_id'] = $oldEvaluation['professor_id'];
                 $data['pao_id'] = $oldEvaluation['pao_id'];
                 $data['evaluator_id'] = $oldEvaluation['evaluator_id'];
@@ -408,7 +412,9 @@ class EvaluationController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        if ($this->hasRole($roles, ['Profesor'])) {
+        $canManageAll = PermissionHelper::can('evaluations', 'manage_all', $roles);
+        $canDeleteAction = PermissionHelper::can('evaluations', 'delete', $roles);
+        if (!$canManageAll && !$canDeleteAction) {
             $this->denyAccess();
         }
 
@@ -416,6 +422,10 @@ class EvaluationController
         if (!$evaluation) {
             header('Location: ' . BASE_PATH . '/evaluations');
             exit();
+        }
+
+        if (!$canManageAll && (int)$evaluation['professor_id'] !== (int)$_SESSION['user_id']) {
+            $this->denyAccess();
         }
 
         // Eliminar archivos asociados si existen

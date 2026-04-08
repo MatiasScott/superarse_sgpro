@@ -48,11 +48,15 @@
     <?php
     require_once __DIR__ . '/../../helpers/PermissionHelper.php';
     $canManageAssignments = PermissionHelper::can('assignments', 'manage_all', $roles ?? null);
+    $canCreateAssignments = PermissionHelper::can('assignments', 'create', $roles ?? null);
+    $canEditAssignments = PermissionHelper::can('assignments', 'edit', $roles ?? null);
+    $canDeleteAssignments = PermissionHelper::can('assignments', 'delete', $roles ?? null);
+    $hasManageOwnAssignments = PermissionHelper::can('assignments', 'manage_own', $roles ?? null);
     ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
 
     <div class="main-content">
-        <?php if ($canManageAssignments) { ?>
+        <?php if ($canManageAssignments || $canCreateAssignments) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -213,16 +217,28 @@
                                         </span>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                        <?php if ($canManageAssignments) { ?>
+                                        <?php
+                                            $isOwnerAssignment = (int)($assignment['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
+                                            $canEditRow = $canManageAssignments || ($canEditAssignments && (!$hasManageOwnAssignments || $isOwnerAssignment));
+                                            $canDeleteRow = $canManageAssignments || ($canDeleteAssignments && (!$hasManageOwnAssignments || $isOwnerAssignment));
+                                        ?>
+                                        <?php if ($canEditRow || $canDeleteRow) { ?>
                                             <div class="flex items-center space-x-2">
-                                                <a href="<?php echo BASE_PATH; ?>/academic/assignments/edit/<?php echo htmlspecialchars($assignment['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
-                                                    <i class="fas fa-edit"></i>
-                                                    <span>Editar</span>
-                                                </a>
-                                                <a href="<?php echo BASE_PATH; ?>/academic/assignments/delete/<?php echo htmlspecialchars($assignment['id']); ?>" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2" onclick="return confirm('¿Está seguro de eliminar esta asignación?')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                    <span>Eliminar</span>
-                                                </a>
+                                                <?php if ($canEditRow): ?>
+                                                    <a href="<?php echo BASE_PATH; ?>/academic/assignments/edit/<?php echo htmlspecialchars($assignment['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                        <i class="fas fa-edit"></i>
+                                                        <span>Editar</span>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if ($canDeleteRow): ?>
+                                                    <form action="<?php echo BASE_PATH; ?>/academic/assignments/delete/<?php echo htmlspecialchars($assignment['id']); ?>" method="POST" onsubmit="return confirm('¿Está seguro de eliminar esta asignación?')">
+                                                        <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                                        <button type="submit" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                            <span>Eliminar</span>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         <?php } ?>
                                     </td>

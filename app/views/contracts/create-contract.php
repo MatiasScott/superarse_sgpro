@@ -31,6 +31,7 @@
 
         <main class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
             <form action="<?php echo BASE_PATH; ?>/contracts/store" method="POST" enctype="multipart/form-data" class="p-8">
+                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 
                 <!-- Sección Profesor Asignado -->
                 <div class="bg-blue-50 rounded-2xl p-6 mb-6 border border-blue-100">

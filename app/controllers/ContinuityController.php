@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class ContinuityController
 {
@@ -101,24 +102,20 @@ class ContinuityController
         $pao = $this->paoModel->find($continuity['pao_id']);
         $approvedBy = $this->userModel->find($continuity['docencia_decision_by']);
 
-        // --- LÓGICA DE ROLES Y PERMISOS MOVIDA AQUÍ (al Controller) ---
-        $userRoleNames = array_column($roles, 'role_name');
-
-        $isSuperAdmin = in_array('Super Administrador', $userRoleNames);
-        $isDocenciaTHRole = in_array('Director de docencia', $userRoleNames) || in_array('Talento humano', $userRoleNames);
-        $isProfesor = in_array('Profesor', $userRoleNames) && $continuity['professor_id'] == $userIdLog;
-        $istalentoHumano = in_array('Talento humano', $userRoleNames);
+        // Permisos centralizados en la matriz de permisos
+        $canManageAll = PermissionHelper::can('continuity', 'manage_all', $roles);
+        $canEdit = PermissionHelper::can('continuity', 'edit', $roles);
+        $isOwner = (int)$continuity['professor_id'] === (int)$userIdLog;
 
         // Verificar si TH ya tomó su decisión (esto bloquea la edición del profesor)
         $isDocenciaDecisionMade = $continuity['docencia_decision'] !== null;
 
         // Permiso para ver/editar la Decisión del Profesor (Sección 1)
         // El profesor solo puede editar si TH aún NO ha tomado su decisión
-        $canViewEditProfessorDecision = $isSuperAdmin || ($isProfesor && !$isDocenciaDecisionMade);
+        $canViewEditProfessorDecision = $canManageAll || ($canEdit && $isOwner && !$isDocenciaDecisionMade);
 
         // Permiso para ver/editar la Decisión de Docencia/TH (Sección 2)
-        $canViewEditDocenciaTHDecision = $isSuperAdmin || $isDocenciaTHRole;
-        // --- FIN LÓGICA DE ROLES ---
+        $canViewEditDocenciaTHDecision = $canManageAll;
 
         $pageTitle = 'Editar Continuidad: ' . htmlspecialchars($continuity['id']);
 
@@ -140,6 +137,10 @@ class ContinuityController
             }
 
             $userIdLog = $_SESSION['user_id'] ?? null;
+            $roles = $this->roleModel->getRolesByUserId($userIdLog);
+            $canManageAll = PermissionHelper::can('continuity', 'manage_all', $roles);
+            $canEdit = PermissionHelper::can('continuity', 'edit', $roles);
+            $isOwner = (int)($oldContinuity['professor_id'] ?? 0) === (int)$userIdLog;
 
             // Determinar qué campo se está intentando actualizar (viene del campo oculto 'update_field' de la vista)
             $fieldToUpdate = $_POST['update_field'] ?? null;
@@ -153,6 +154,10 @@ class ContinuityController
 
             // --- Decisión del Profesor (Primer paso) ---
             if ($fieldToUpdate === 'professor_decision' && isset($_POST['professor_decision'])) {
+                if (!$canManageAll && !($canEdit && $isOwner)) {
+                    header('Location: ' . BASE_PATH . '/continuity');
+                    exit();
+                }
 
                 // Verificar que TH aún no haya tomado su decisión
                 if ($oldContinuity['docencia_decision'] === null) {
@@ -177,6 +182,10 @@ class ContinuityController
 
                 // --- Decisión de Docencia/TH (Segundo paso: Solo si el Profesor ya decidió) ---
             } elseif ($fieldToUpdate === 'docencia_decision' && isset($_POST['docencia_decision'])) {
+                if (!$canManageAll) {
+                    header('Location: ' . BASE_PATH . '/continuity');
+                    exit();
+                }
 
                 // Aplicamos la restricción de workflow: solo se puede decidir si el profesor ya dio su decisión.
                 if ($oldContinuity['professor_decision'] !== null) {
@@ -219,8 +228,23 @@ class ContinuityController
             exit();
         }
 
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        $canManageAll = PermissionHelper::can('continuity', 'manage_all', $roles);
+        $canDelete = PermissionHelper::can('continuity', 'delete', $roles);
+
+        if (!$canManageAll && !$canDelete) {
+            header('Location: ' . BASE_PATH . '/continuity');
+            exit();
+        }
+
         $continuity = $this->continuityModel->find((int)$id);
         if ($continuity) {
+            $isOwner = (int)($continuity['professor_id'] ?? 0) === (int)$_SESSION['user_id'];
+            if (!$canManageAll && !$isOwner) {
+                header('Location: ' . BASE_PATH . '/continuity');
+                exit();
+            }
+
             $query = "DELETE FROM continuity WHERE id = ?";
             $stmt = $this->continuityModel->getConnection()->prepare($query);
             $stmt->execute([(int)$id]);

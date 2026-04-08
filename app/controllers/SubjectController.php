@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../helpers/ActivityHelper.php';
 require_once __DIR__ . '/../helpers/NotificationHelper.php';
+require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class SubjectController
 {
@@ -45,6 +46,7 @@ class SubjectController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('subjects', ['create', 'manage_all'], $roles, '/academic/subjects');
         $careers = $this->careerModel->getAll(); // Obtiene las carreras para el select
         $pageTitle = 'Crear Nueva Asignatura';
         require_once __DIR__ . '/../views/academic/create-subject.php';
@@ -53,6 +55,9 @@ class SubjectController
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id'] ?? 0);
+            PermissionHelper::enforceAny('subjects', ['create', 'manage_all'], $roles, '/academic/subjects');
+
             $name = $_POST['name'] ?? '';
             $careerId = $_POST['career_id'] ?? null;
 
@@ -84,6 +89,7 @@ class SubjectController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('subjects', ['edit', 'manage_all'], $roles, '/academic/subjects');
 
         // Obtiene todas las carreras para el campo de selección
         $careers = $this->careerModel->getAll();
@@ -103,6 +109,9 @@ class SubjectController
     public function update($id)
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id'] ?? 0);
+            PermissionHelper::enforceAny('subjects', ['edit', 'manage_all'], $roles, '/academic/subjects');
+
             $name = $_POST['name'] ?? '';
             $careerId = $_POST['career_id'] ?? null;
 
@@ -135,6 +144,9 @@ class SubjectController
             header('Location: ' . BASE_PATH . '/');
             exit();
         }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforceAny('subjects', ['delete', 'manage_all'], $roles, '/academic/subjects');
 
         $subject = $this->subjectModel->find((int)$id);
         if ($subject) {

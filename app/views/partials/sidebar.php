@@ -25,7 +25,7 @@ $canViewSubjects = PermissionHelper::can('subjects', 'view', $roles);
 $canViewCareers = PermissionHelper::can('careers', 'view', $roles);
 $canViewUsers = PermissionHelper::can('users', 'view', $roles);
 $canViewPao = PermissionHelper::can('pao', 'view', $roles);
-$canViewPermissionAdmin = PermissionHelper::hasAnyRole(['Super Administrador'], $roles);
+$canViewPermissionAdmin = PermissionHelper::can('permissions', 'view', $roles);
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
 
@@ -239,11 +239,14 @@ $menuSections = [
 
         <ul>
             <li class="mt-6 pt-6 border-t border-gray-600">
-                <a href="<?php echo BASE_PATH; ?>/logout" 
-                   class="flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-red-600 hover:to-rose-600 transition-all duration-200 text-red-300 hover:text-white group">
-                   <i class="fas fa-sign-out-alt text-lg group-hover:text-white"></i>
-                   <span class="font-medium">Cerrar Sesión</span>
-                </a>
+                <form action="<?php echo BASE_PATH; ?>/logout" method="POST">
+                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                    <button type="submit"
+                        class="w-full flex items-center space-x-3 py-3 px-4 rounded-xl hover:bg-gradient-to-r hover:from-red-600 hover:to-rose-600 transition-all duration-200 text-red-300 hover:text-white group text-left">
+                        <i class="fas fa-sign-out-alt text-lg group-hover:text-white"></i>
+                        <span class="font-medium">Cerrar Sesión</span>
+                    </button>
+                </form>
             </li>
         </ul>
     </nav>

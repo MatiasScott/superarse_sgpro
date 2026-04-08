@@ -181,6 +181,7 @@ $isDocenciaDecisionMade = $continuity['docencia_decision'] !== null;
 
                 <!-- Formulario de Decisión del Profesor -->
                 <form action="<?= BASE_PATH ?>/continuity/update/<?= htmlspecialchars($continuity['id']) ?>" method="POST" class="<?= $isDocenciaDecisionMade ? 'workflow-disabled' : '' ?>">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                     <input type="hidden" name="update_field" value="professor_decision">
 
                     <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
@@ -268,6 +269,7 @@ $isDocenciaDecisionMade = $continuity['docencia_decision'] !== null;
 
                     <!-- Formulario de Decisión de Docencia/TH -->
                     <form action="<?= BASE_PATH ?>/continuity/update/<?= htmlspecialchars($continuity['id']) ?>" method="POST" class="mt-6">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                         <input type="hidden" name="update_field" value="docencia_decision">
 
                         <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
