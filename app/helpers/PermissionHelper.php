@@ -234,10 +234,6 @@ class PermissionHelper
             return array_values(array_unique(array_column($roles, 'role_name')));
         }
 
-        if (isset($_SESSION['role_names']) && is_array($_SESSION['role_names'])) {
-            return $_SESSION['role_names'];
-        }
-
         if (!isset($_SESSION['user_id'])) {
             return [];
         }
@@ -245,9 +241,18 @@ class PermissionHelper
         $roleModel = new RoleModel();
         $currentRoles = $roleModel->getRolesByUserId($_SESSION['user_id']);
         $roleNames = array_values(array_unique(array_column($currentRoles, 'role_name')));
-        $_SESSION['role_names'] = $roleNames;
 
-        return $roleNames;
+        // Mantiene la sesión en sincronía con cambios de roles aplicados en BD.
+        if (!empty($roleNames)) {
+            $_SESSION['role_names'] = $roleNames;
+            return $roleNames;
+        }
+
+        if (isset($_SESSION['role_names']) && is_array($_SESSION['role_names'])) {
+            return $_SESSION['role_names'];
+        }
+
+        return [];
     }
 
     public static function hasAnyRole($allowedRoles, $roles = null)

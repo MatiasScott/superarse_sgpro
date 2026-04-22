@@ -438,6 +438,7 @@ class Router
 
         // Rutas de gestión de Carreras
         $this->addRoute('/academic/careers', 'Career@index');
+        $this->addRoute('/academic/careers/create', 'Career@create');
         $this->addRoute('/academic/careers/store', 'Career@store');
         $this->addRoute('/academic/careers/edit/{id}', 'Career@edit');
         $this->addRoute('/academic/careers/update/{id}', 'Career@update');

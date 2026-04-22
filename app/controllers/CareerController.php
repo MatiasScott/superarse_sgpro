@@ -32,6 +32,20 @@ class CareerController
         require_once __DIR__ . '/../views/academic/careers.php';
     }
 
+    public function create()
+    {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_PATH . '/');
+            exit();
+        }
+
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforce('careers', 'create', $roles, '/academic/careers');
+
+        $pageTitle = 'Nueva Carrera';
+        require_once __DIR__ . '/../views/academic/create-career.php';
+    }
+
     public function store()
     {
         if (!isset($_SESSION['user_id'])) {
@@ -44,11 +58,13 @@ class CareerController
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
+            $code = $_POST['code'] ?? null;
+            $description = $_POST['description'] ?? null;
 
-            if ($this->careerModel->create($name)) {
+            if ($this->careerModel->create($name, $code, $description)) {
                 $lastCareerId = $this->careerModel->getLastInsertedId();
                 $userId = $_SESSION['user_id'] ?? null;
-                $newData = ['name' => $name];
+                $newData = ['name' => $name, 'code' => $code, 'description' => $description];
                 $this->auditLogModel->logAction($userId, 'CREATE', 'careers', $lastCareerId, null, $newData);
 
                 header('Location: ' . BASE_PATH . '/academic/careers');
@@ -92,13 +108,19 @@ class CareerController
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
+            $code = $_POST['code'] ?? null;
+            $description = $_POST['description'] ?? null;
 
             $oldCareer = $this->careerModel->find($id);
 
-            if ($this->careerModel->update($id, $name)) {
+            if ($this->careerModel->update($id, $name, $code, $description)) {
                 $userId = $_SESSION['user_id'] ?? null;
-                $newData = ['name' => $name];
-                $oldData = ['name' => $oldCareer['name']];
+                $newData = ['name' => $name, 'code' => $code, 'description' => $description];
+                $oldData = [
+                    'name' => $oldCareer['name'] ?? null,
+                    'code' => $oldCareer['code'] ?? null,
+                    'description' => $oldCareer['description'] ?? null,
+                ];
                 $this->auditLogModel->logAction($userId, 'UPDATE', 'careers', $id, $oldData, $newData);
 
                 header('Location: ' . BASE_PATH . '/academic/careers');
@@ -126,8 +148,10 @@ class CareerController
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['name'] ?? '';
+            $code = $_POST['code'] ?? null;
+            $description = $_POST['description'] ?? null;
 
-            if ($this->careerModel->create($name)) {
+            if ($this->careerModel->create($name, $code, $description)) {
                 $lastCareerId = $this->careerModel->getLastInsertedId();
                 echo json_encode(['success' => true, 'id' => $lastCareerId, 'name' => $name]);
                 exit();
