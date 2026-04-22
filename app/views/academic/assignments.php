@@ -185,7 +185,16 @@
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <div class="flex items-center space-x-2">
                                             <i class="fas fa-hourglass-half text-orange-500"></i>
+                                            <?php
+                                                $hpw     = (float) $assignment['hours_per_week'];
+                                                $totalM  = (int) round($hpw * 60);
+                                                $hPart   = intdiv($totalM, 60);
+                                                $mPart   = $totalM % 60;
+                                                $hLabel  = $hPart > 0 && $mPart > 0 ? "{$hPart}h {$mPart}min"
+                                                         : ($hPart > 0 ? "{$hPart}h" : "{$mPart}min");
+                                            ?>
                                             <span class="font-bold"><?php echo htmlspecialchars($assignment['hours_per_week']); ?> hrs</span>
+                                            <span class="text-xs text-gray-400 ml-1">(<?php echo $hLabel; ?>)</span>
                                         </div>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">

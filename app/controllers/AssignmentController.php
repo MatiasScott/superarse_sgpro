@@ -69,7 +69,7 @@ class AssignmentController
             $professorId = $_POST['professor_id'] ?? null;
             $subjectId = $_POST['subject_id'] ?? null;
             $paoId = $_POST['pao_id'] ?? null;
-            $hoursPerWeek = $_POST['hours_per_week'] ?? null;
+            $hoursPerWeek = isset($_POST['hours_per_week']) ? (float)$_POST['hours_per_week'] : null;
             $status = $_POST['status'] ?? 'Asignado';
 
             if ($this->assignmentModel->create($professorId, $subjectId, $paoId, $hoursPerWeek, $status)) {
@@ -151,7 +151,7 @@ class AssignmentController
                 exit();
             }
 
-            $hoursPerWeek = $_POST['hours_per_week'] ?? null;
+            $hoursPerWeek = isset($_POST['hours_per_week']) ? (float)$_POST['hours_per_week'] : null;
             $status = $_POST['status'] ?? 'Asignado';
 
             $data = ['hours_per_week' => $hoursPerWeek, 'status' => $status];

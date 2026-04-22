@@ -71,11 +71,11 @@
                             <i class="fas fa-clock text-yellow-500 text-lg"></i>
                             <label for="hours_per_week" class="font-bold text-gray-800">Horas por Semana</label>
                         </div>
-                        <input type="number" id="hours_per_week" name="hours_per_week" 
+                        <input type="number" step="0.01" id="hours_per_week" name="hours_per_week" 
                                value="<?php echo htmlspecialchars($assignment['hours_per_week']); ?>"
                                class="w-full px-4 py-3 border-0 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-yellow-400 outline-none text-gray-700 text-center font-semibold text-xl" 
-                               min="1" max="40" required>
-                        <p class="text-xs text-yellow-600 mt-2 text-center">Máximo 40 horas</p>
+                               min="0.01" max="40" required>
+                        <p id="hours_preview" class="text-xs text-yellow-600 mt-2 text-center">Valor decimal permitido &bull; Máximo 40 horas</p>
                     </div>
 
                     <!-- Estado -->
@@ -133,6 +133,33 @@
     </div>
 
     <script src="<?php echo BASE_PATH; ?>/js/responsive.js"></script>
+    <script>
+    (function () {
+        var input   = document.getElementById('hours_per_week');
+        var preview = document.getElementById('hours_preview');
+        var hint    = 'Valor decimal permitido \u2022 M\u00e1ximo 40 horas';
+
+        function updatePreview() {
+            var val = parseFloat(input.value);
+            if (isNaN(val) || input.value === '') {
+                preview.textContent = hint;
+                preview.className = 'text-xs text-yellow-600 mt-2 text-center';
+                return;
+            }
+            var totalMin = Math.round(val * 60);
+            var h = Math.floor(totalMin / 60);
+            var m = totalMin % 60;
+            var txt = h > 0 && m > 0 ? h + 'h ' + m + 'min'
+                    : h > 0          ? h + 'h'
+                    :                  m + 'min';
+            preview.textContent = '\u2248 ' + txt;
+            preview.className = 'text-xs text-indigo-600 font-semibold mt-2 text-center';
+        }
+
+        input.addEventListener('input', updatePreview);
+        updatePreview();
+    })();
+    </script>
 </body>
 
 </html>
