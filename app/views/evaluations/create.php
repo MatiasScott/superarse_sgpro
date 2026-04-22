@@ -117,9 +117,9 @@
                             <label for="autoevaluacion" class="block text-sm font-bold text-gray-700 mb-2">
                                 <i class="fas fa-user text-blue-500 mr-1"></i> Autoevaluación (20%)
                             </label>
-                            <input type="number" step="0.01" id="autoevaluacion" name="autoevaluacion" 
+                            <input type="number" step="0.0001" id="autoevaluacion" name="autoevaluacion" 
                                    class="w-full px-3 py-2 border-0 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-400 outline-none text-gray-700 text-center font-semibold" 
-                                placeholder="0.00" min="0" max="5" required oninput="calcularPuntajeTotal()">
+                                placeholder="0.0000" min="0" max="5" required oninput="calcularPuntajeTotal()">
                             <p class="text-xs text-gray-500 text-center mt-1">Máx: 5 puntos</p>
                         </div>
 
@@ -128,9 +128,9 @@
                             <label for="coevaluacion_20" class="block text-sm font-bold text-gray-700 mb-2">
                                 <i class="fas fa-users text-green-500 mr-1"></i> Coevaluación Directivos (20%)
                             </label>
-                            <input type="number" step="0.01" id="coevaluacion_20" name="coevaluacion_20" 
+                            <input type="number" step="0.0001" id="coevaluacion_20" name="coevaluacion_20" 
                                    class="w-full px-3 py-2 border-0 rounded-lg bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-gray-700 text-center font-semibold" 
-                                placeholder="0.00" min="0" max="5" required oninput="calcularPuntajeTotal()">
+                                placeholder="0.0000" min="0" max="5" required oninput="calcularPuntajeTotal()">
                             <p class="text-xs text-gray-500 text-center mt-1">Máx: 5 puntos</p>
                         </div>
 
@@ -139,9 +139,9 @@
                             <label for="coevaluacion_30" class="block text-sm font-bold text-gray-700 mb-2">
                                 <i class="fas fa-users text-emerald-500 mr-1"></i> Coevaluación Pares (30%)
                             </label>
-                            <input type="number" step="0.01" id="coevaluacion_30" name="coevaluacion_30" 
+                            <input type="number" step="0.0001" id="coevaluacion_30" name="coevaluacion_30" 
                                    class="w-full px-3 py-2 border-0 rounded-lg bg-gray-50 focus:ring-2 focus:ring-emerald-400 outline-none text-gray-700 text-center font-semibold" 
-                                placeholder="0.00" min="0" max="5" required oninput="calcularPuntajeTotal()">
+                                placeholder="0.0000" min="0" max="5" required oninput="calcularPuntajeTotal()">
                             <p class="text-xs text-gray-500 text-center mt-1">Máx: 5 puntos</p>
                         </div>
 
@@ -150,9 +150,9 @@
                             <label for="heteroevaluacion" class="block text-sm font-bold text-gray-700 mb-2">
                                 <i class="fas fa-user-graduate text-purple-500 mr-1"></i> Heteroevaluación (30%)
                             </label>
-                            <input type="number" step="0.01" id="heteroevaluacion" name="heteroevaluacion" 
+                            <input type="number" step="0.0001" id="heteroevaluacion" name="heteroevaluacion" 
                                    class="w-full px-3 py-2 border-0 rounded-lg bg-gray-50 focus:ring-2 focus:ring-purple-400 outline-none text-gray-700 text-center font-semibold" 
-                                placeholder="0.00" min="0" max="5" required oninput="calcularPuntajeTotal()">
+                                placeholder="0.0000" min="0" max="5" required oninput="calcularPuntajeTotal()">
                             <p class="text-xs text-gray-500 text-center mt-1">Máx: 5 puntos</p>
                         </div>
 
