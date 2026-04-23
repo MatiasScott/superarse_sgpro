@@ -86,7 +86,7 @@ class PortfolioController
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
         $canManageAll = $this->canManageAllPortfolios($roles);
-        if (!PermissionHelper::canAny('portfolios', ['create', 'manage_all'], $roles)) {
+        if (!PermissionHelper::canAny('portfolios', ['create', 'manage_all', 'manage_own'], $roles)) {
             header('Location: ' . BASE_PATH . '/portfolios');
             exit();
         }
@@ -217,7 +217,7 @@ class PortfolioController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all'], $roles)) {
+        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all', 'manage_own'], $roles)) {
             header('Location: ' . BASE_PATH . '/portfolios');
             exit();
         }
@@ -277,7 +277,7 @@ class PortfolioController
         // Verificar permisos - profesor solo puede actualizar su propio portafolio
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
         $canEditAll = $this->canManageAllPortfolios($roles);
-        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all'], $roles)) {
+        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all', 'manage_own'], $roles)) {
             header('Location: ' . BASE_PATH . '/portfolios');
             exit();
         }

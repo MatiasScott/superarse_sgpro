@@ -119,12 +119,12 @@ class Router
             'Portfolio' => [
                 'index' => ['module' => 'portfolios', 'actions' => ['view']],
                 'viewByProfessorPao' => ['module' => 'portfolios', 'actions' => ['view']],
-                'create' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all']],
-                'store' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all']],
-                'edit' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all']],
-                'update' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all']],
+                'create' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'store' => ['module' => 'portfolios', 'actions' => ['create', 'manage_all', 'manage_own']],
+                'edit' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
+                'update' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all', 'manage_own']],
                 'updateType' => ['module' => 'portfolios', 'actions' => ['edit', 'manage_all']],
-                'delete' => ['module' => 'portfolios', 'actions' => ['delete', 'manage_all']],
+                'delete' => ['module' => 'portfolios', 'actions' => ['delete', 'manage_all', 'manage_own']],
                 '__default' => ['module' => 'portfolios', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Evaluation' => [
