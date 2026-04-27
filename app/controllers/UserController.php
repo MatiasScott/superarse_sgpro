@@ -13,7 +13,7 @@ class UserController
     private $userModel;
     private $roleModel;
     private $auditLogModel; // Propiedad para el modelo de auditoría
-    private const ESCUELA_OPTIONS = ['ECSOS', 'ECAET', 'ECSET'];
+    private const ESCUELA_OPTIONS = ['ECSOS', 'ECAVET', 'ECSET'];
 
     public function __construct()
     {
