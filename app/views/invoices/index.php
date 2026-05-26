@@ -240,7 +240,8 @@
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <?php if (!empty($invoice['payment_proof_path'])): ?>
-                                            <a href="<?php echo BASE_PATH . '/' . htmlspecialchars($invoice['payment_proof_path']); ?>" target="_blank" class="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                            <?php $paymentProofHref = rtrim(BASE_PATH, '/') . '/' . ltrim((string)$invoice['payment_proof_path'], '/'); ?>
+                                            <a href="<?php echo htmlspecialchars($paymentProofHref); ?>" target="_blank" class="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                                                 <i class="fas fa-file-alt"></i>
                                                 <span>Ver</span>
                                                 <i class="fas fa-external-link-alt text-xs"></i>
@@ -254,7 +255,8 @@
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <?php if (!empty($invoice['comprobante_path'])): ?>
-                                            <a href="<?php echo BASE_PATH . '/' . htmlspecialchars($invoice['comprobante_path']); ?>" target="_blank" class="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                            <?php $comprobanteHref = rtrim(BASE_PATH, '/') . '/' . ltrim((string)$invoice['comprobante_path'], '/'); ?>
+                                            <a href="<?php echo htmlspecialchars($comprobanteHref); ?>" target="_blank" class="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                                                 <i class="fas fa-file-pdf"></i>
                                                 <span>PDF</span>
                                                 <i class="fas fa-external-link-alt text-xs"></i>

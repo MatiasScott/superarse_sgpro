@@ -179,6 +179,7 @@
                     
                     <?php if (!empty($invoice['payment_proof_path'])): ?>
                         <div class="bg-white p-4 rounded-lg mb-4 border-2 border-red-200">
+                            <?php $paymentProofHref = rtrim(BASE_PATH, '/') . '/' . ltrim((string)$invoice['payment_proof_path'], '/'); ?>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <i class="fas fa-file-pdf text-3xl text-red-600 mr-3"></i>
@@ -187,7 +188,7 @@
                                         <p class="text-xs text-gray-500">Archivo PDF adjunto</p>
                                     </div>
                                 </div>
-                                <a href="<?php echo BASE_PATH . '/' . htmlspecialchars($invoice['payment_proof_path']); ?>" target="_blank" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition duration-200">
+                                <a href="<?php echo htmlspecialchars($paymentProofHref); ?>" target="_blank" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition duration-200">
                                     <i class="fas fa-eye mr-2"></i>
                                     Ver PDF
                                 </a>
@@ -224,6 +225,7 @@
                     
                     <?php if (!empty($invoice['comprobante_path'])): ?>
                         <div class="bg-white p-4 rounded-lg mb-4 border-2 border-orange-200">
+                            <?php $comprobanteHref = rtrim(BASE_PATH, '/') . '/' . ltrim((string)$invoice['comprobante_path'], '/'); ?>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <i class="fas fa-file-pdf text-3xl text-orange-600 mr-3"></i>
@@ -232,7 +234,7 @@
                                         <p class="text-xs text-gray-500">Archivo PDF adjunto</p>
                                     </div>
                                 </div>
-                                <a href="<?php echo BASE_PATH . '/' . htmlspecialchars($invoice['comprobante_path']); ?>" target="_blank" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-100 rounded-lg hover:bg-orange-200 transition duration-200">
+                                <a href="<?php echo htmlspecialchars($comprobanteHref); ?>" target="_blank" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-100 rounded-lg hover:bg-orange-200 transition duration-200">
                                     <i class="fas fa-eye mr-2"></i>
                                     Ver PDF
                                 </a>
