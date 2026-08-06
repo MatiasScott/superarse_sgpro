@@ -5,6 +5,51 @@ class Router
 {
     private $routes = [];
 
+    private function parseIniSizeToBytes($sizeValue)
+    {
+        $size = trim((string)$sizeValue);
+        if ($size === '') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($size, -1));
+        $bytes = (float)$size;
+
+        switch ($unit) {
+            case 'g':
+                $bytes *= 1024;
+                // no break
+            case 'm':
+                $bytes *= 1024;
+                // no break
+            case 'k':
+                $bytes *= 1024;
+                break;
+        }
+
+        return (int)$bytes;
+    }
+
+    private function isPostPayloadTooLarge()
+    {
+        $requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        if ($requestMethod !== 'POST') {
+            return false;
+        }
+
+        $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+        if ($contentLength <= 0) {
+            return false;
+        }
+
+        $postMaxSizeBytes = $this->parseIniSizeToBytes(ini_get('post_max_size'));
+        if ($postMaxSizeBytes <= 0) {
+            return false;
+        }
+
+        return $contentLength > $postMaxSizeBytes;
+    }
+
     private function getRouteSecurityRequirement($controller, $method)
     {
         if ($method === 'delete') {
@@ -74,6 +119,14 @@ class Router
             http_response_code(405);
             $statusCode = 405;
             $errorMessage = 'Esta operación requiere método POST.';
+            require_once __DIR__ . '/../views/errors/http_error.php';
+            exit();
+        }
+
+        if ($requestMethod === 'POST' && $this->isPostPayloadTooLarge()) {
+            http_response_code(413);
+            $statusCode = 413;
+            $errorMessage = 'El tamaño total de los archivos enviados supera el límite permitido por el servidor (' . ini_get('post_max_size') . ').';
             require_once __DIR__ . '/../views/errors/http_error.php';
             exit();
         }

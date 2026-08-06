@@ -2,6 +2,7 @@
 $statusCode = isset($statusCode) ? (int)$statusCode : (http_response_code() ?: 500);
 
 $defaultMessages = [
+    413 => 'El tamano total de la solicitud supera el limite permitido por el servidor.',
     405 => 'Esta operacion requiere un metodo HTTP permitido para continuar.',
     419 => 'Tu sesion de seguridad ha expirado o el token CSRF es invalido.',
     403 => 'No tienes permisos para realizar esta accion.',
@@ -10,6 +11,7 @@ $defaultMessages = [
 ];
 
 $titleMap = [
+    413 => 'Solicitud Demasiado Grande',
     405 => 'Metodo No Permitido',
     419 => 'Sesion Expirada',
     403 => 'Acceso Denegado',
