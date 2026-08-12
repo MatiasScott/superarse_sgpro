@@ -13,8 +13,8 @@ require_once __DIR__ . '/../app/core/Database.php';
 session_start();
 CsrfHelper::ensureToken();
 
-// Configura el tiempo de inactividad a 5 minutos (300 segundos)
-$inactive_time = 300;
+// Configura el tiempo de inactividad de la sesión
+$inactive_time = defined('SESSION_IDLE_TIMEOUT') ? (int)SESSION_IDLE_TIMEOUT : 7200;
 
 // Verifica si la sesión de usuario y la variable de tiempo existen
 if (isset($_SESSION['user_id']) && isset($_SESSION['last_activity'])) {

@@ -98,8 +98,8 @@ class PortfolioController
         // Verificar si el portafolio ya existe para esta unidad específica
         $existing = $this->portfolioModel->findByKeys($professorId, $paoId, $unitNumber);
         if ($existing) {
-            // Si ya existe, redirigir al update
-            header('Location: ' . BASE_PATH . '/portfolios/update/' . $existing['id']);
+            // Si ya existe, redirigir a edición (update es solo POST)
+            header('Location: ' . BASE_PATH . '/portfolios/edit/' . $existing['id']);
             exit();
         }
 

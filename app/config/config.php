@@ -59,3 +59,10 @@ if ($basePath === '/' || $basePath === '\\') {
     $basePath = '';
 }
 define('BASE_PATH', $basePath);
+
+// Tiempo máximo de inactividad de sesión (segundos). Default: 2 horas.
+$sessionTimeout = isset($env['SESSION_IDLE_TIMEOUT']) ? (int)$env['SESSION_IDLE_TIMEOUT'] : 7200;
+if ($sessionTimeout < 300) {
+    $sessionTimeout = 300;
+}
+define('SESSION_IDLE_TIMEOUT', $sessionTimeout);
