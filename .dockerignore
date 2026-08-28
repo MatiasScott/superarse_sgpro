@@ -1,0 +1,8 @@
+.git
+.gitignore
+node_modules
+MANUAL
+public/error_log
+.env.example
+Dockerfile
+docker-compose.yml

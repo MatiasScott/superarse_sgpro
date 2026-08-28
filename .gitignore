@@ -1,3 +1,7 @@
 # Archivos subidos por usuarios
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# Variables de entorno locales
+.env.local
+.env
