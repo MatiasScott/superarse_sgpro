@@ -8,7 +8,7 @@
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="<?php echo BASE_PATH; ?>/css/compiled.css">
-<link rel="stylesheet" href="<?php echo BASE_PATH; ?>/css/responsive.css">
+    <link rel="stylesheet" href="<?php echo BASE_PATH; ?>/css/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -33,12 +33,12 @@
 
             <form action="<?php echo BASE_PATH; ?>/invoices/update/<?php echo htmlspecialchars($invoice['id']); ?>" method="POST" enctype="multipart/form-data" class="bg-white p-8 rounded-b-2xl shadow-xl space-y-6">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
-                
+
                 <?php
                 // Si no puede gestionar todo, se comporta como usuario con edición de su propia factura.
                 $isProfessor = !PermissionHelper::can('invoices', 'manage_all', $roles ?? null);
                 ?>
-                
+
                 <!-- Sección Información General (Solo Lectura) -->
                 <div class="bg-gray-50 bg-opacity-50 p-6 rounded-xl border-2 border-gray-200">
                     <div class="flex items-center mb-4">
@@ -69,8 +69,8 @@
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">Unidad</h3>
                         </div>
-                        <select id="unit_number" name="unit_number" required 
-                                class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 font-medium">
+                        <select id="unit_number" name="unit_number" required
+                            class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 font-medium">
                             <option value="1" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 1) ? 'selected' : ''; ?>>📚 Unidad 1</option>
                             <option value="2" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 2) ? 'selected' : ''; ?>>📚 Unidad 2</option>
                             <option value="3" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 3) ? 'selected' : ''; ?>>📚 Unidad 3</option>
@@ -86,9 +86,9 @@
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">Mes</h3>
                         </div>
-                        <select id="period_month" name="period_month" required 
-                                class="w-full px-4 py-3 border-2 border-indigo-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 font-medium">
-                            <?php 
+                        <select id="period_month" name="period_month" required
+                            class="w-full px-4 py-3 border-2 border-indigo-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 font-medium">
+                            <?php
                             $months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
                             $currentMonth = isset($invoice['period_month']) ? $invoice['period_month'] : '';
                             foreach ($months as $month): ?>
@@ -105,10 +105,10 @@
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">Año</h3>
                         </div>
-                        <input type="number" id="period_year" name="period_year" 
-                               value="<?php echo isset($invoice['period_year']) ? htmlspecialchars($invoice['period_year']) : date('Y'); ?>" 
-                               min="2019" max="2030" required 
-                               class="w-full px-4 py-3 border-2 border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-center font-semibold">
+                        <input type="number" id="period_year" name="period_year"
+                            value="<?php echo isset($invoice['period_year']) ? htmlspecialchars($invoice['period_year']) : date('Y'); ?>"
+                            min="2019" max="2030" required
+                            class="w-full px-4 py-3 border-2 border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-center font-semibold">
                     </div>
                 </div>
 
@@ -122,10 +122,10 @@
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">Fecha</h3>
                         </div>
-                        <input type="date" id="invoice_date" name="invoice_date" 
-                               value="<?php echo isset($invoice['invoice_date']) ? htmlspecialchars($invoice['invoice_date']) : date('Y-m-d'); ?>" 
-                               required 
-                               class="w-full px-4 py-3 border-2 border-teal-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200">
+                        <input type="date" id="invoice_date" name="invoice_date"
+                            value="<?php echo isset($invoice['invoice_date']) ? htmlspecialchars($invoice['invoice_date']) : date('Y-m-d'); ?>"
+                            required
+                            class="w-full px-4 py-3 border-2 border-teal-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200">
                     </div>
 
                     <!-- Monto -->
@@ -138,7 +138,7 @@
                         </div>
                         <input type="number" id="amount" name="amount" value="<?php echo htmlspecialchars($invoice['amount']); ?>" step="0.01" required class="w-full px-4 py-3 border-2 border-green-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-200 text-center font-semibold text-xl" placeholder="0.00">
                     </div>
-                    
+
                     <!-- Estado -->
                     <div class="bg-cyan-50 bg-opacity-50 p-6 rounded-xl border-2 border-cyan-200">
                         <div class="flex items-center mb-4">
@@ -147,7 +147,7 @@
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">Estado</h3>
                         </div>
-                        
+
                         <?php if ($isProfessor): ?>
                             <!-- Estado bloqueado para profesores -->
                             <input type="hidden" name="status" value="<?php echo htmlspecialchars($invoice['status']); ?>">
@@ -160,7 +160,8 @@
                         <?php else: ?>
                             <!-- Select normal para administradores -->
                             <select id="status" name="status" required class="w-full px-4 py-3 border-2 border-cyan-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition duration-200 font-medium">
-                                <option value="Pendiente" <?php echo ($invoice['status'] == 'Pendiente') ? 'selected' : ''; ?>>⏳ Pendiente</option>
+                                <option value="Pendiente Factura" <?php echo ($invoice['status'] == 'Pendiente Factura') ? 'selected' : ''; ?>>⏳ Pendiente de Factura</option>
+                                <option value="Pendiente" <?php echo ($invoice['status'] == 'Pendiente') ? 'selected' : ''; ?>>⏳ Pendiente de Pago</option>
                                 <option value="Pagada" <?php echo ($invoice['status'] == 'Pagada') ? 'selected' : ''; ?>>✅ Pagada</option>
                                 <option value="Rechazada" <?php echo ($invoice['status'] == 'Rechazada') ? 'selected' : ''; ?>>❌ Rechazada</option>
                             </select>
@@ -176,7 +177,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-gray-800">Factura PDF</h3>
                     </div>
-                    
+
                     <?php if (!empty($invoice['payment_proof_path'])): ?>
                         <div class="bg-white p-4 rounded-lg mb-4 border-2 border-red-200">
                             <?php $paymentProofHref = rtrim(BASE_PATH, '/') . '/' . ltrim((string)$invoice['payment_proof_path'], '/'); ?>
@@ -199,7 +200,7 @@
                             <p class="text-gray-500 text-center py-2">No hay factura cargada aún</p>
                         </div>
                     <?php endif; ?>
-                    
+
                     <!-- Todos pueden subir archivos -->
                     <div class="border-2 border-dashed border-red-300 rounded-xl p-6 text-center bg-white hover:bg-red-50 transition duration-200">
                         <input type="file" id="payment_proof" name="payment_proof" accept=".pdf" class="hidden" onchange="updateFileName(this, 'payment_proof_label')">
@@ -213,7 +214,7 @@
                         </label>
                     </div>
                 </div>
-                
+
                 <!-- Sección Comprobante PDF -->
                 <div class="bg-orange-50 bg-opacity-50 p-6 rounded-xl border-2 border-orange-200">
                     <div class="flex items-center mb-4">
@@ -222,7 +223,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-gray-800">Comprobante PDF</h3>
                     </div>
-                    
+
                     <?php if (!empty($invoice['comprobante_path'])): ?>
                         <div class="bg-white p-4 rounded-lg mb-4 border-2 border-orange-200">
                             <?php $comprobanteHref = rtrim(BASE_PATH, '/') . '/' . ltrim((string)$invoice['comprobante_path'], '/'); ?>
@@ -245,30 +246,30 @@
                             <p class="text-gray-500 text-center py-2">No hay comprobante cargado aún</p>
                         </div>
                     <?php endif; ?>
-                    
+
                     <?php if (!$isProfessor): ?>
-                    <!-- Solo administradores pueden subir comprobantes -->
-                    <div class="border-2 border-dashed border-orange-300 rounded-xl p-6 text-center bg-white hover:bg-orange-50 transition duration-200">
-                        <input type="file" id="comprobante" name="comprobante" accept=".pdf" class="hidden" onchange="updateFileName(this, 'comprobante_label')">
-                        <label for="comprobante" class="cursor-pointer">
-                            <i class="fas fa-cloud-upload-alt text-4xl text-orange-400 mb-3"></i>
-                            <p class="text-sm font-semibold text-gray-700 mb-1" id="comprobante_label">
-                                <?php echo !empty($invoice['comprobante_path']) ? 'Reemplazar Comprobante PDF' : 'Subir Comprobante PDF'; ?>
-                            </p>
-                            <p class="text-xs text-gray-500">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-                            <p class="text-xs text-gray-400 mt-2">Solo archivos PDF (máximo 10MB)</p>
-                        </label>
-                    </div>
+                        <!-- Solo administradores pueden subir comprobantes -->
+                        <div class="border-2 border-dashed border-orange-300 rounded-xl p-6 text-center bg-white hover:bg-orange-50 transition duration-200">
+                            <input type="file" id="comprobante" name="comprobante" accept=".pdf" class="hidden" onchange="updateFileName(this, 'comprobante_label')">
+                            <label for="comprobante" class="cursor-pointer">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-orange-400 mb-3"></i>
+                                <p class="text-sm font-semibold text-gray-700 mb-1" id="comprobante_label">
+                                    <?php echo !empty($invoice['comprobante_path']) ? 'Reemplazar Comprobante PDF' : 'Subir Comprobante PDF'; ?>
+                                </p>
+                                <p class="text-xs text-gray-500">Arrastra tu archivo aquí o haz clic para seleccionar</p>
+                                <p class="text-xs text-gray-400 mt-2">Solo archivos PDF (máximo 10MB)</p>
+                            </label>
+                        </div>
                     <?php else: ?>
-                    <!-- Mensaje para profesores: solo visualización -->
-                    <div class="bg-white rounded-xl p-6 text-center border-2 border-orange-200">
-                        <i class="fas fa-lock text-4xl text-orange-300 mb-3"></i>
-                        <p class="text-gray-700 mb-2">El comprobante es gestionado por el administrador</p>
-                        <p class="text-sm text-orange-600">Solo puedes visualizar el archivo si ha sido cargado</p>
-                    </div>
+                        <!-- Mensaje para profesores: solo visualización -->
+                        <div class="bg-white rounded-xl p-6 text-center border-2 border-orange-200">
+                            <i class="fas fa-lock text-4xl text-orange-300 mb-3"></i>
+                            <p class="text-gray-700 mb-2">El comprobante es gestionado por el administrador</p>
+                            <p class="text-sm text-orange-600">Solo puedes visualizar el archivo si ha sido cargado</p>
+                        </div>
                     <?php endif; ?>
                 </div>
-                
+
                 <!-- Sección Observación -->
                 <div class="bg-yellow-50 bg-opacity-50 p-6 rounded-xl border-2 border-yellow-200">
                     <div class="flex items-center mb-4">
@@ -277,7 +278,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-gray-800">Observación</h3>
                     </div>
-                    
+
                     <?php if ($isProfessor): ?>
                         <!-- Solo lectura para profesores -->
                         <?php if (!empty($invoice['observacion'])): ?>
@@ -315,7 +316,7 @@
             </form>
         </main>
     </div>
-    
+
     <script>
         function updateFileName(input, labelId) {
             const label = document.getElementById(labelId);

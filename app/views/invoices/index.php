@@ -99,12 +99,11 @@
             <div class="search-filter-controls" style="border-radius: 2rem 2rem 0 0; margin: -2px -2px 0 -2px;">
                 <div class="search-bar-container">
                     <label class="search-bar-label">🔍 Buscar facturas</label>
-                    <input 
-                        type="text" 
-                        id="tableSearch" 
-                        class="search-bar-input" 
-                        placeholder="Buscar por profesor, PAO, período, monto, observación..."
-                    >
+                    <input
+                        type="text"
+                        id="tableSearch"
+                        class="search-bar-input"
+                        placeholder="Buscar por profesor, PAO, período, monto, observación...">
                 </div>
                 <div id="filterContainer" class="filters-container"></div>
                 <div class="search-results-info">
@@ -113,7 +112,7 @@
                     </span>
                 </div>
             </div>
-            
+
             <div class="table-responsive">
                 <table class="min-w-full leading-normal">
                     <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -297,6 +296,10 @@
                                                 $statusClass = 'bg-gradient-to-r from-red-500 to-red-600 text-white';
                                                 $statusIcon = 'fa-times-circle';
                                                 break;
+                                            case 'Pendiente Factura':
+                                                $statusClass = 'bg-gradient-to-r from-blue-400 to-blue-500 text-white';
+                                                $statusIcon = 'fa-clock';
+                                                break;
                                             default:
                                                 $statusClass = 'bg-gradient-to-r from-gray-400 to-gray-500 text-white';
                                                 $statusIcon = 'fa-question-circle';
@@ -310,9 +313,9 @@
 
                                     </td>
                                     <?php
-                                        $isOwnerInvoice = (int)($invoice['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
-                                        $canEditRow = $canManageInvoices || ($canEditInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
-                                        $canDeleteRow = $canManageInvoices || ($canDeleteInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
+                                    $isOwnerInvoice = (int)($invoice['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
+                                    $canEditRow = $canManageInvoices || ($canEditInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
+                                    $canDeleteRow = $canManageInvoices || ($canDeleteInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
                                     ?>
                                     <?php if ($canEditRow || $canDeleteRow) { ?>
                                         <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
@@ -373,11 +376,11 @@
     </div>
 
     <script src="<?php echo BASE_PATH; ?>/js/responsive.js"></script>
-    
+
     <!-- Scripts para búsqueda y filtros -->
     <script src="<?php echo BASE_PATH; ?>/js/table-search-filter.js"></script>
     <script src="<?php echo BASE_PATH; ?>/js/module-config.js"></script>
-    
+
     <!-- Inicializar búsqueda para módulo de facturas -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
