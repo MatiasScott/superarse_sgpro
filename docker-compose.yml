@@ -1,10 +1,15 @@
 services:
   superar1_sgpro:
     build: .
-
     container_name: superar1_sgpro
-
     restart: unless-stopped
+
+    environment:
+      TZ: America/Guayaquil
+
+    volumes:
+      - ./timezone.ini:/usr/local/etc/php/conf.d/99-timezone.ini:ro
+      - ./public/uploads:/var/www/html/public/uploads
 
     ports:
       - "8085:80"
