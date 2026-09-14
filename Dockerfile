@@ -41,6 +41,10 @@ RUN chown -R www-data:www-data /var/www/html \
     && mkdir -p /var/www/html/public/uploads \
     && chown -R www-data:www-data /var/www/html/public/uploads
 
+COPY docker-entrypoint-sgpro.sh /usr/local/bin/docker-entrypoint-sgpro.sh
+
+RUN chmod +x /usr/local/bin/docker-entrypoint-sgpro.sh
+
 EXPOSE 80
 
 CMD ["apache2-foreground"]
