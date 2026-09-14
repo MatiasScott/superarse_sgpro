@@ -9,6 +9,7 @@ services:
 
     volumes:
       - ./timezone.ini:/usr/local/etc/php/conf.d/99-timezone.ini:ro
+      - ./.env.local:/var/www/html/.env.local:ro
       - ./public/uploads:/var/www/html/public/uploads
 
     ports:
