@@ -58,6 +58,8 @@ class AuthController
                 $_SESSION['user_role'] = $role;
                 $_SESSION['role_names'] = $roleNames;
                 $_SESSION['role_ids'] = $roleIds;
+
+                $this->userModel->registerLastLogin($user['id']);
                 
                 // Redirige al dashboard
                 header('Location: ' . BASE_PATH . '/dashboard');
@@ -78,6 +80,8 @@ class AuthController
                     $_SESSION['user_role'] = $role;
                     $_SESSION['role_names'] = $roleNames;
                     $_SESSION['role_ids'] = $roleIds;
+
+                    $this->userModel->registerLastLogin($user['id']);
 
                     header('Location: ' . BASE_PATH . '/dashboard');
                     exit();

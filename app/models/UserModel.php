@@ -113,6 +113,28 @@ class UserModel extends BaseModel
         }
     }
 
+    /**
+     * Registra last_login_at con NOW() en la BD configurada.
+     * Requiere sp_registrar_ultimo_acceso y la columna users.last_login_at.
+     * Devuelve false y registra el error si falla, sin bloquear la autenticacion.
+     */
+    public function registerLastLogin($userId)
+    {
+        try {
+            $stmt = $this->db->prepare("CALL sp_registrar_ultimo_acceso(?)");
+            try {
+                $stmt->execute([$userId]);
+            } finally {
+                // Liberar los resultados del procedimiento antes de reutilizar la conexion.
+                $stmt->closeCursor();
+            }
+            return true;
+        } catch (PDOException $e) {
+            error_log("UserModel::registerLastLogin error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getUsersByRole($roleName)
     {
         // Corregida la consulta para unirse a la tabla de roles y usar la columna 'role_name'
