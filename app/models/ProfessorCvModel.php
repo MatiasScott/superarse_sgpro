@@ -17,12 +17,12 @@ class ProfessorCvModel extends BaseModel
         $surnames,
         $firstName,
         $cedulaPassport,
-        $nationality = null,
-        $birthDate = null,
-        $city = null,
-        $address = null,
-        $phone = null,
-        $cellPhone = null,
+        $nationality,
+        $birthDate,
+        $city,
+        $address,
+        $phone,
+        $cellPhone,
         $email,
         $photoPath = null
     ) {
