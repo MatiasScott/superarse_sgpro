@@ -45,6 +45,15 @@ class AuthController
 
             // Usa el modelo para buscar el usuario por email
             $user = $this->userModel->findByEmail($email);
+
+            $isInactive = $user && isset($user['active']) && (int) $user['active'] === 0;
+            if ($isInactive && (password_verify($password, $user['password']) || $user['password'] === $password)) {
+                $error = "Su usuario se encuentra inactivo. Contacte al administrador.";
+                $pageTitle = 'Login - SGPRO';
+                $roles = $this->roleModel->getAll();
+                require_once __DIR__ . '/../views/auth/login.php';
+                return;
+            }
             $userrole = $user ? $this->roleModel->getRolesByUserId($user['id']) : [];
             $role = $userrole[0]['id'] ?? '';
             $roleNames = array_values(array_unique(array_column($userrole, 'role_name')));

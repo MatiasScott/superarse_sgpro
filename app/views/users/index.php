@@ -43,6 +43,14 @@
             </div>
             <?php unset($_SESSION['flash_error']); ?>
         <?php endif; ?>
+        <?php if (!empty($_SESSION['flash_success'])): ?>
+            <div class="max-w-3xl mx-auto mt-6">
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-xl">
+                    <p class="text-sm text-green-700"><?php echo htmlspecialchars($_SESSION['flash_success']); ?></p>
+                </div>
+            </div>
+            <?php unset($_SESSION['flash_success']); ?>
+        <?php endif; ?>
         <?php if ($canManageUsers || $canCreateUsers){ ?>
         <header class="mb-8">
             <div class="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
@@ -129,6 +137,12 @@
                         </th>
                         <th class="px-5 py-4 border-b-2 border-gray-200 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                             <div class="flex items-center space-x-2">
+                                <i class="fas fa-toggle-on text-green-600"></i>
+                                <span>Estado</span>
+                            </div>
+                        </th>
+                        <th class="px-5 py-4 border-b-2 border-gray-200 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <div class="flex items-center space-x-2">
                                 <i class="fas fa-cog text-gray-600"></i>
                                 <span>Acciones</span>
                             </div>
@@ -162,6 +176,14 @@
                                         <span class="text-gray-700"><?php echo htmlspecialchars($user['escuela'] ?? 'Sin escuela'); ?></span>
                                     </div>
                                 </td>
+                                <?php $isActiveUser = (int) ($user['active'] ?? 1) === 1; ?>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                    <?php if ($isActiveUser): ?>
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Activo</span>
+                                    <?php else: ?>
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">Inactivo</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                 <?php if ($canManageUsers || $canEditUsers || $canDeleteUsers){ ?>
                                     <div class="flex items-center space-x-2">
@@ -172,7 +194,16 @@
                                             </a>
                                         <?php endif; ?>
                                         <?php if ($canManageUsers || $canDeleteUsers): ?>
-                                            <form action="<?php echo BASE_PATH; ?>/users/delete/<?php echo $user['id']; ?>" method="POST" onsubmit="return confirm('¿Está seguro de eliminar este usuario?')">
+                                            <?php if (!$isActiveUser): ?>
+                                            <form action="<?php echo BASE_PATH; ?>/users/activate/<?php echo $user['id']; ?>" method="POST" class="js-confirm-form" data-confirm-type="activate" data-user-name="<?php echo htmlspecialchars($user['name']); ?>">
+                                                <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                                                <button type="submit" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                    <i class="fas fa-user-check"></i>
+                                                    <span>Reactivar</span>
+                                                </button>
+                                            </form>
+                                            <?php endif; ?>
+                                            <form action="<?php echo BASE_PATH; ?>/users/delete/<?php echo $user['id']; ?>" method="POST" class="js-confirm-form" data-confirm-type="delete" data-user-name="<?php echo htmlspecialchars($user['name']); ?>">
                                                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                                                 <button type="submit" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
                                                     <i class="fas fa-trash-alt"></i>
@@ -187,7 +218,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center">
+                            <td colspan="6" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center justify-center space-y-4">
                                     <div class="bg-gray-100 p-6 rounded-full">
                                         <i class="fas fa-users text-gray-400 text-5xl"></i>
@@ -218,6 +249,118 @@
             </p>
         </div>
     </div>
+
+    <!-- MODAL DE CONFIRMACIÓN (eliminar / reactivar usuario) -->
+    <div id="userConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="userConfirmTitle">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div id="userConfirmHeader" class="p-6 text-white flex items-center space-x-4 bg-gradient-to-r from-red-500 to-red-600">
+                <div class="bg-white/20 p-3 rounded-xl">
+                    <i id="userConfirmIcon" class="fas fa-trash-alt text-2xl"></i>
+                </div>
+                <h3 id="userConfirmTitle" class="text-xl font-bold">Eliminar usuario</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <p id="userConfirmMessage" class="text-gray-800"></p>
+                <div id="userConfirmNote" class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg text-sm text-amber-800 flex space-x-3">
+                    <i class="fas fa-info-circle mt-0.5"></i>
+                    <span>Si el usuario tiene información registrada (portafolio, CV, contratos, etc.) <strong>no se eliminará</strong>: solo se cambiará su estado a <strong>Inactivo</strong> y se conservarán sus datos.</span>
+                </div>
+            </div>
+            <div class="px-6 pb-6 flex justify-end space-x-3">
+                <button type="button" id="userConfirmCancel" class="px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="userConfirmAccept" class="px-5 py-2.5 rounded-xl text-white font-semibold shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const modal = document.getElementById('userConfirmModal');
+            const header = document.getElementById('userConfirmHeader');
+            const icon = document.getElementById('userConfirmIcon');
+            const title = document.getElementById('userConfirmTitle');
+            const message = document.getElementById('userConfirmMessage');
+            const note = document.getElementById('userConfirmNote');
+            const acceptBtn = document.getElementById('userConfirmAccept');
+            const cancelBtn = document.getElementById('userConfirmCancel');
+            let pendingForm = null;
+
+            const variants = {
+                delete: {
+                    title: 'Eliminar usuario',
+                    icon: 'fas fa-trash-alt',
+                    accept: 'Eliminar',
+                    gradient: ['from-red-500', 'to-red-600'],
+                    hover: ['hover:from-red-600', 'hover:to-red-700'],
+                    message: (name) => `¿Está seguro de eliminar al usuario «${name}»?`,
+                    showNote: true
+                },
+                activate: {
+                    title: 'Reactivar usuario',
+                    icon: 'fas fa-user-check',
+                    accept: 'Reactivar',
+                    gradient: ['from-green-500', 'to-green-600'],
+                    hover: ['hover:from-green-600', 'hover:to-green-700'],
+                    message: (name) => `¿Desea reactivar al usuario «${name}»? Podrá volver a iniciar sesión.`,
+                    showNote: false
+                }
+            };
+            const allColorClasses = Object.values(variants).flatMap(v => [...v.gradient, ...v.hover]);
+
+            function openModal(form) {
+                const v = variants[form.dataset.confirmType] || variants.delete;
+                pendingForm = form;
+                acceptBtn.disabled = false;
+
+                header.classList.remove(...allColorClasses);
+                header.classList.add(...v.gradient);
+                acceptBtn.classList.remove(...allColorClasses);
+                acceptBtn.classList.add(...v.gradient, ...v.hover);
+
+                icon.className = v.icon + ' text-2xl';
+                title.textContent = v.title;
+                message.textContent = v.message(form.dataset.userName || '');
+                acceptBtn.textContent = v.accept;
+                note.classList.toggle('hidden', !v.showNote);
+                note.classList.toggle('flex', v.showNote);
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                cancelBtn.focus();
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                pendingForm = null;
+            }
+
+            document.querySelectorAll('form.js-confirm-form').forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    openModal(form);
+                });
+            });
+
+            acceptBtn.addEventListener('click', function () {
+                if (!pendingForm) return;
+                const form = pendingForm;
+                acceptBtn.disabled = true;
+                closeModal();
+                form.submit(); // submit() no vuelve a disparar el evento 'submit'
+            });
+
+            cancelBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
+        })();
+    </script>
 
     <script src="<?php echo BASE_PATH; ?>/js/responsive.js"></script>
     

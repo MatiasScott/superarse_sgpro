@@ -283,27 +283,105 @@ class UserController
                 exit();
             }
 
-            // Guardar datos antiguos para auditoría
-            $oldData = ['name' => $user['name'], 'email' => $user['email']];
-
-            // 1. Eliminar roles pivot
-            $this->roleModel->removeRolesFromUser($id);
-
-            // 2. Eliminar usuario
-            if ($this->userModel->delete($id)) {
-                // Auditoría
-                $this->auditLogModel->logAction($_SESSION['user_id'], 'DELETE', 'users', $id, $oldData, null);
-
-                // Log de actividad y notificación
-                ActivityHelper::logUserDelete($id, $user['name']);
-                NotificationHelper::notifyUserDelete($id, $user['name']);
+            if ((int) $id === (int) $_SESSION['user_id']) {
+                $_SESSION['flash_error'] = 'No puede eliminar o desactivar su propio usuario.';
+                header('Location: ' . BASE_PATH . '/users');
+                exit();
             }
 
+            // Guardar datos antiguos para auditoría
+            $oldData = ['name' => $user['name'], 'email' => $user['email'], 'active' => $user['active'] ?? 1];
+
+            // Si el usuario tiene datos (portafolio, CV, contratos, etc.) solo se desactiva,
+            // para evitar que el borrado en cascada elimine o desvincule su información.
+            $relatedData = $this->userModel->getRelatedDataSummary($id);
+
+            if ($relatedData === null || !empty($relatedData)) {
+                if (isset($user['active']) && (int) $user['active'] === 0) {
+                    $_SESSION['flash_error'] = 'El usuario ya se encuentra inactivo. No puede eliminarse porque tiene información registrada.';
+                    header('Location: ' . BASE_PATH . '/users');
+                    exit();
+                }
+
+                if (!$this->userModel->setActive($id, false)) {
+                    throw new Exception('No se pudo desactivar el usuario.');
+                }
+
+                $newData = ['name' => $user['name'], 'email' => $user['email'], 'active' => 0, 'related_data' => $relatedData];
+                $this->auditLogModel->logAction($_SESSION['user_id'], 'DEACTIVATE', 'users', $id, $oldData, $newData);
+                ActivityHelper::logUserDeactivate($id, $user['name']);
+                NotificationHelper::notifyUserUpdate($id, $user['name']);
+
+                $_SESSION['flash_success'] = 'El usuario tiene información registrada en el sistema, por lo que no se eliminó: se cambió su estado a Inactivo y sus datos se conservaron.';
+                header('Location: ' . BASE_PATH . '/users');
+                exit();
+            }
+
+            // Sin datos relacionados: eliminación física
+            if (!$this->userModel->hardDelete($id)) {
+                throw new Exception('No se pudo eliminar el usuario.');
+            }
+
+            $this->auditLogModel->logAction($_SESSION['user_id'], 'DELETE', 'users', $id, $oldData, null);
+            ActivityHelper::logUserDelete($id, $user['name']);
+            NotificationHelper::notifyUserDelete($id, $user['name']);
+
+            $_SESSION['flash_success'] = 'Usuario eliminado correctamente.';
             header('Location: ' . BASE_PATH . '/users');
             exit();
         } catch (Exception $e) {
             error_log('UserController::delete error: ' . $e->getMessage());
             $_SESSION['flash_error'] = 'Ocurrió un error al eliminar el usuario. Detalle en logs.';
+            header('Location: ' . BASE_PATH . '/users');
+            exit();
+        }
+    }
+
+    public function activate($id)
+    {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_PATH . '/');
+            exit();
+        }
+
+        $sessionRoles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforce('users', 'manage_all', $sessionRoles, '/users');
+
+        try {
+            $user = $this->userModel->find($id);
+            if (!$user) {
+                $_SESSION['flash_error'] = 'Usuario no encontrado.';
+                header('Location: ' . BASE_PATH . '/users');
+                exit();
+            }
+
+            if ((int) ($user['active'] ?? 1) === 1) {
+                $_SESSION['flash_error'] = 'El usuario ya se encuentra activo.';
+                header('Location: ' . BASE_PATH . '/users');
+                exit();
+            }
+
+            if (!$this->userModel->setActive($id, true)) {
+                throw new Exception('No se pudo reactivar el usuario.');
+            }
+
+            $this->auditLogModel->logAction(
+                $_SESSION['user_id'],
+                'ACTIVATE',
+                'users',
+                $id,
+                ['name' => $user['name'], 'email' => $user['email'], 'active' => 0],
+                ['name' => $user['name'], 'email' => $user['email'], 'active' => 1]
+            );
+            ActivityHelper::logUserActivate($id, $user['name']);
+            NotificationHelper::notifyUserUpdate($id, $user['name']);
+
+            $_SESSION['flash_success'] = 'Usuario reactivado correctamente.';
+            header('Location: ' . BASE_PATH . '/users');
+            exit();
+        } catch (Exception $e) {
+            error_log('UserController::activate error: ' . $e->getMessage());
+            $_SESSION['flash_error'] = 'Ocurrió un error al reactivar el usuario. Detalle en logs.';
             header('Location: ' . BASE_PATH . '/users');
             exit();
         }

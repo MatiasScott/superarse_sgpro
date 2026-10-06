@@ -66,6 +66,7 @@ class Router
             ],
             'User' => [
                 'delete' => ['require_post' => true, 'require_csrf' => true],
+                'activate' => ['require_post' => true, 'require_csrf' => true],
             ],
             'Pao' => [
                 'delete' => ['require_post' => true, 'require_csrf' => true],
@@ -156,6 +157,7 @@ class Router
                 'edit' => ['module' => 'users', 'actions' => ['edit', 'manage_all']],
                 'update' => ['module' => 'users', 'actions' => ['edit', 'manage_all']],
                 'delete' => ['module' => 'users', 'actions' => ['delete', 'manage_all']],
+                'activate' => ['module' => 'users', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'users', 'actions' => ['manage_all']],
             ],
             'Report' => ['module' => 'reports', 'actions' => ['view']],
@@ -432,6 +434,7 @@ class Router
         $this->addRoute('/users/edit/{id}', 'User@edit');
         $this->addRoute('/users/update/{id}', 'User@update');
         $this->addRoute('/users/delete/{id}', 'User@delete');
+        $this->addRoute('/users/activate/{id}', 'User@activate');
 
         // Rutas de administración de permisos
         $this->addRoute('/permissions', 'Permission@index');

@@ -10,13 +10,21 @@ const MODULE_CONFIGS = {
             'ID': [0],
             'Nombre': [1],
             'Correo': [2],
-            'Escuela': [3]
+            'Escuela': [3],
+            'Estado': [4]
         },
         filtersConfig: {
             'escuela': {
                 label: 'Escuela',
                 type: 'select',
                 column: 3,
+                autoFill: true,
+                options: []
+            },
+            'estado': {
+                label: 'Estado',
+                type: 'select',
+                column: 4,
                 autoFill: true,
                 options: []
             }

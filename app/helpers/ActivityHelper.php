@@ -57,6 +57,16 @@ class ActivityHelper
     {
         return self::logDelete('users', $userId, "Usuario: {$userName}");
     }
+
+    public static function logUserDeactivate($userId, $userName)
+    {
+        return self::logUpdate('users', $userId, "Usuario desactivado: {$userName}");
+    }
+
+    public static function logUserActivate($userId, $userName)
+    {
+        return self::logUpdate('users', $userId, "Usuario reactivado: {$userName}");
+    }
     
     public static function logPaoCreate($paoId, $paoName)
     {

@@ -101,6 +101,100 @@ class UserModel extends BaseModel
         }
     }
 
+    /**
+     * Tablas que referencian a users pero que no constituyen "datos" del usuario
+     * (roles, bitácoras, notificaciones). No impiden la eliminación física.
+     */
+    private const NON_BLOCKING_RELATED_TABLES = [
+        'user_roles_pivot',
+        'activity_logs',
+        'audit_logs',
+        'notifications',
+    ];
+
+    /**
+     * Devuelve [tabla => cantidad] de registros que referencian al usuario
+     * (portafolio, CV, contratos, facturas, evaluaciones, asignaciones, etc.).
+     * Las FK se leen de information_schema para cubrir cualquier tabla nueva.
+     * Devuelve null si no se pudo verificar (el llamador debe asumir que hay datos).
+     */
+    public function getRelatedDataSummary($id)
+    {
+        try {
+            $fkStmt = $this->db->prepare(
+                "SELECT TABLE_NAME, COLUMN_NAME
+                 FROM information_schema.KEY_COLUMN_USAGE
+                 WHERE REFERENCED_TABLE_SCHEMA = DATABASE()
+                   AND REFERENCED_TABLE_NAME = ?
+                   AND REFERENCED_COLUMN_NAME = 'id'"
+            );
+            $fkStmt->execute([$this->table]);
+            $references = $fkStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $summary = [];
+            foreach ($references as $ref) {
+                $tableName = $ref['TABLE_NAME'];
+                $columnName = $ref['COLUMN_NAME'];
+
+                if (in_array($tableName, self::NON_BLOCKING_RELATED_TABLES, true)) {
+                    continue;
+                }
+
+                $countStmt = $this->db->prepare(
+                    "SELECT COUNT(*) FROM `" . str_replace('`', '``', $tableName) . "` WHERE `" . str_replace('`', '``', $columnName) . "` = ?"
+                );
+                $countStmt->execute([$id]);
+                $count = (int) $countStmt->fetchColumn();
+
+                if ($count > 0) {
+                    $summary[$tableName] = ($summary[$tableName] ?? 0) + $count;
+                }
+            }
+
+            return $summary;
+        } catch (PDOException $e) {
+            error_log("UserModel::getRelatedDataSummary error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function setActive($id, $active)
+    {
+        try {
+            $stmt = $this->db->prepare("UPDATE " . $this->table . " SET active = ? WHERE id = ?");
+            return $stmt->execute([$active ? 1 : 0, $id]);
+        } catch (PDOException $e) {
+            error_log("UserModel::setActive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Eliminación física (roles + usuario) en una transacción.
+     * Solo debe usarse cuando el usuario no tiene datos relacionados.
+     */
+    public function hardDelete($id)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $stmt = $this->db->prepare("DELETE FROM user_roles_pivot WHERE user_id = ?");
+            $stmt->execute([$id]);
+
+            $stmt = $this->db->prepare("DELETE FROM " . $this->table . " WHERE id = ?");
+            $stmt->execute([$id]);
+
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log("UserModel::hardDelete error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function updatePassword($id, $hashedPassword)
     {
         try {
