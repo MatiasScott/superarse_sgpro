@@ -3,11 +3,77 @@
 
 require_once __DIR__ . '/BaseModel.php';
 
+class DuplicateInvoiceException extends RuntimeException {}
+
 class InvoiceModel extends BaseModel {
     protected $table = "invoices";
+    private $lastInsertedId;
 
     public function __construct() {
         parent::__construct();
+    }
+
+    public function getInvoicedUnitsByProfessor($professorId = null, $excludeInvoiceId = null) {
+        $query = "SELECT DISTINCT professor_id, pao_id, unit_number FROM {$this->table} WHERE 1 = 1";
+        $params = [];
+        if ($professorId !== null) {
+            $query .= " AND professor_id = ?";
+            $params[] = $professorId;
+        }
+        if ($excludeInvoiceId !== null) {
+            $query .= " AND id <> ?";
+            $params[] = $excludeInvoiceId;
+        }
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
+        $units = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $units[(int) $row['professor_id']][(int) $row['pao_id']][] = (int) $row['unit_number'];
+        }
+        return $units;
+    }
+
+    public function hasInvoiceForUnit($professorId, $paoId, $unitNumber, $excludeInvoiceId = null) {
+        $query = "SELECT id FROM {$this->table} WHERE professor_id = ? AND pao_id = ? AND unit_number = ?";
+        $params = [$professorId, $paoId, $unitNumber];
+        if ($excludeInvoiceId !== null) {
+            $query .= " AND id <> ?";
+            $params[] = $excludeInvoiceId;
+        }
+        $query .= " LIMIT 1";
+        if ($this->db->inTransaction()) {
+            $query .= " FOR UPDATE";
+        }
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function saveUniqueUnit($professorId, $paoId, $unitNumber, $excludeInvoiceId, callable $save) {
+        $this->db->beginTransaction();
+        try {
+            // Serializar las escrituras del mismo profesor, incluso entre solicitudes simultaneas.
+            $lock = $this->db->prepare("SELECT id FROM users WHERE id = ? FOR UPDATE");
+            $lock->execute([$professorId]);
+            if ($professorId !== null && $lock->fetchColumn() === false) {
+                throw new RuntimeException('Profesor no encontrado al guardar la factura.');
+            }
+            if ($this->hasInvoiceForUnit($professorId, $paoId, $unitNumber, $excludeInvoiceId)) {
+                throw new DuplicateInvoiceException('Ya existe una factura para este profesor, PAO y unidad. No puede facturar la misma unidad nuevamente.');
+            }
+            $saved = $save();
+            if (!$saved) {
+                $this->db->rollBack();
+                return false;
+            }
+            $this->db->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
     }
     
     public function create($professorId, $paoId, $unitNumber, $periodMonth, $periodYear, $invoiceDate, $amount, $status, $paymentProofPath = null, $comprobantePath = null, $observacion = null) {
@@ -24,7 +90,13 @@ class InvoiceModel extends BaseModel {
         $stmt->bindParam(9, $paymentProofPath);
         $stmt->bindParam(10, $comprobantePath);
         $stmt->bindParam(11, $observacion);
-        return $stmt->execute();
+        return $this->saveUniqueUnit($professorId, $paoId, $unitNumber, null, function () use ($stmt) {
+            $saved = $stmt->execute();
+            if ($saved) {
+                $this->lastInsertedId = $this->db->lastInsertId();
+            }
+            return $saved;
+        });
     }
     
     public function update($id, $unitNumber, $periodMonth, $periodYear, $amount, $status, $paymentProofPath = null, $comprobantePath = null, $observacion = null) {
@@ -39,7 +111,13 @@ class InvoiceModel extends BaseModel {
         $stmt->bindParam(7, $comprobantePath);
         $stmt->bindParam(8, $observacion);
         $stmt->bindParam(9, $id);
-        return $stmt->execute();
+        $invoice = $this->find($id);
+        if (!$invoice) {
+            throw new RuntimeException('Factura no encontrada.');
+        }
+        return $this->saveUniqueUnit($invoice['professor_id'], $invoice['pao_id'], $unitNumber, $id, function () use ($stmt) {
+            return $stmt->execute();
+        });
     }
 
     public function getInvoicesWithDetails($userId = null, $userRoles = [], $year = null) {
@@ -100,6 +178,6 @@ class InvoiceModel extends BaseModel {
     }
 
     public function getLastInsertedId() {
-        return $this->db->lastInsertId();
+        return $this->lastInsertedId ?? $this->db->lastInsertId();
     }
 }

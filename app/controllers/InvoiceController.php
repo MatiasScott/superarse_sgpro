@@ -2,6 +2,7 @@
 // app/controllers/InvoiceController.php
 
 require_once __DIR__ . '/../models/InvoiceModel.php';
+require_once __DIR__ . '/../models/PortfolioModel.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/PaoModel.php';
 require_once __DIR__ . '/../models/RoleModel.php';
@@ -14,6 +15,7 @@ require_once __DIR__ . '/../helpers/PermissionHelper.php';
 class InvoiceController
 {
     private $invoiceModel;
+    private $portfolioModel;
     private $userModel;
     private $paoModel;
     private $roleModel;
@@ -22,6 +24,7 @@ class InvoiceController
     public function __construct()
     {
         $this->invoiceModel = new InvoiceModel();
+        $this->portfolioModel = new PortfolioModel();
         $this->userModel = new UserModel();
         $this->paoModel = new PaoModel();
         $this->roleModel = new RoleModel();
@@ -36,6 +39,73 @@ class InvoiceController
     private function denyAccessToInvoices()
     {
         header('Location: ' . BASE_PATH . '/invoices');
+        exit();
+    }
+
+    private function loadApprovedUnits($professorId)
+    {
+        try {
+            return $this->portfolioModel->getApprovedUnitsByProfessor($professorId);
+        } catch (PDOException $e) {
+            error_log('InvoiceController::loadApprovedUnits error: ' . $e->getMessage());
+            $_SESSION['flash_error'] = 'No se pudo verificar la aprobación de los portafolios. Intente nuevamente.';
+            return null;
+        }
+    }
+
+    private function enforceApprovedUnit($professorId, $paoId, $unitNumber, $redirect)
+    {
+        $approvedUnits = $this->loadApprovedUnits($professorId);
+        $unit = filter_var($unitNumber, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => 4]
+        ]);
+        if ($approvedUnits !== null && $unit !== false
+            && in_array($unit, $approvedUnits[(int) $paoId] ?? [], true)) {
+            return;
+        }
+
+        if ($approvedUnits !== null) {
+            $_SESSION['flash_error'] = 'Solo puede facturar unidades aprobadas de su portafolio en el PAO seleccionado.';
+        }
+        header('Location: ' . BASE_PATH . $redirect);
+        exit();
+    }
+
+    private function loadInvoicedUnits($professorId = null, $excludeInvoiceId = null)
+    {
+        try {
+            return $this->invoiceModel->getInvoicedUnitsByProfessor($professorId, $excludeInvoiceId);
+        } catch (PDOException $e) {
+            error_log('InvoiceController::loadInvoicedUnits error: ' . $e->getMessage());
+            $_SESSION['flash_error'] = 'No se pudo verificar las unidades ya facturadas. Intente nuevamente.';
+            return null;
+        }
+    }
+
+    private function enforceUniqueUnit($professorId, $paoId, $unitNumber, $redirect, $excludeInvoiceId = null)
+    {
+        try {
+            if (!$this->invoiceModel->hasInvoiceForUnit($professorId, $paoId, $unitNumber, $excludeInvoiceId)) {
+                return;
+            }
+            $_SESSION['flash_error'] = 'Ya existe una factura para este profesor, PAO y unidad. No puede facturar la misma unidad nuevamente.';
+        } catch (PDOException $e) {
+            error_log('InvoiceController::enforceUniqueUnit error: ' . $e->getMessage());
+            $_SESSION['flash_error'] = 'No se pudo verificar las unidades ya facturadas. Intente nuevamente.';
+        }
+        header('Location: ' . BASE_PATH . $redirect);
+        exit();
+    }
+
+    private function rejectDuplicateInvoice(DuplicateInvoiceException $e, array $uploadedPaths, $redirect)
+    {
+        foreach ($uploadedPaths as $path) {
+            if ($path !== null && !unlink(__DIR__ . '/../../public' . $path)) {
+                error_log('InvoiceController::rejectDuplicateInvoice: no se pudo limpiar ' . $path);
+            }
+        }
+        $_SESSION['flash_error'] = $e->getMessage();
+        header('Location: ' . BASE_PATH . $redirect);
         exit();
     }
 
@@ -74,6 +144,10 @@ class InvoiceController
         
         // Obtener PAOs para el formulario
         $paos = $this->paoModel->getAll();
+        $restrictInvoiceUnits = !$this->canManageAllInvoices($roles);
+        $approvedUnitsByPao = $restrictInvoiceUnits
+            ? $this->loadApprovedUnits($_SESSION['user_id']) : [];
+        $invoicedUnitsByProfessor = $this->loadInvoicedUnits($restrictInvoiceUnits ? $_SESSION['user_id'] : null);
         
         $pageTitle = 'Crear Nueva Factura';
         require_once __DIR__ . '/../views/invoices/create-invoice.php';
@@ -91,7 +165,7 @@ class InvoiceController
             // Obtener datos directamente del formulario
             $professorId = $_POST['professor_id'] ?? null;
             $paoId = $_POST['pao_id'] ?? null;
-            $unitNumber = $_POST['unit_number'] ?? 1;
+            $unitNumber = $_POST['unit_number'] ?? null;
             $periodMonth = $_POST['period_month'] ?? null;
             $periodYear = $_POST['period_year'] ?? date('Y');
             $invoiceDate = $_POST['invoice_date'] ?? date('Y-m-d');
@@ -114,12 +188,19 @@ class InvoiceController
 
             $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
             $canManageAll = $this->canManageAllInvoices($roles);
+            if ($canManageAll && $unitNumber === null) {
+                $unitNumber = 1;
+            }
             if (!PermissionHelper::canAny('invoices', ['create', 'manage_all'], $roles)) {
                 $this->denyAccessToInvoices();
             }
             if (!$canManageAll && (int)$professorId !== (int)$_SESSION['user_id']) {
                 $this->denyAccessToInvoices();
             }
+            if (!$canManageAll) {
+                $this->enforceApprovedUnit($professorId, $paoId, $unitNumber, '/invoices/create');
+            }
+            $this->enforceUniqueUnit($professorId, $paoId, $unitNumber, '/invoices/create');
 
             // Manejar archivo de factura PDF
             if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === UPLOAD_ERR_OK) {
@@ -135,7 +216,7 @@ class InvoiceController
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0777, true);
                         }
-                        $newFileName = md5(time() . $fileName) . '.pdf';
+                        $newFileName = bin2hex(random_bytes(16)) . '.pdf';
                         $destPath = $uploadDir . $newFileName;
                         
                         if (move_uploaded_file($fileTmpPath, $destPath)) {
@@ -159,7 +240,7 @@ class InvoiceController
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0777, true);
                         }
-                        $newFileName = md5(time() . $fileName) . '.pdf';
+                        $newFileName = bin2hex(random_bytes(16)) . '.pdf';
                         $destPath = $uploadDir . $newFileName;
                         
                         if (move_uploaded_file($fileTmpPath, $destPath)) {
@@ -169,7 +250,12 @@ class InvoiceController
                 }
             }
 
-            if ($this->invoiceModel->create($professorId, $paoId, $unitNumber, $periodMonth, $periodYear, $invoiceDate, $amount, $status, $paymentProofPath, $comprobantePath, $observacion)) {
+            try {
+                $created = $this->invoiceModel->create($professorId, $paoId, $unitNumber, $periodMonth, $periodYear, $invoiceDate, $amount, $status, $paymentProofPath, $comprobantePath, $observacion);
+            } catch (DuplicateInvoiceException $e) {
+                $this->rejectDuplicateInvoice($e, [$paymentProofPath, $comprobantePath], '/invoices/create');
+            }
+            if ($created) {
                 $lastInvoiceId = $this->invoiceModel->getLastInsertedId();
                 $userId = $_SESSION['user_id'] ?? null;
                 $newData = [
@@ -222,6 +308,10 @@ class InvoiceController
             header('Location: ' . BASE_PATH . '/invoices');
             exit();
         }
+        if (!$this->canManageAllInvoices($roles)
+            && (int) $invoice['professor_id'] !== (int) $_SESSION['user_id']) {
+            $this->denyAccessToInvoices();
+        }
 
         // Obtener el nombre del profesor usando el ID de la factura
         $professor = $this->userModel->find($invoice['professor_id']);
@@ -242,6 +332,10 @@ class InvoiceController
         }
 
         $pageTitle = 'Editar Factura: ' . htmlspecialchars($invoice['id']);
+        $restrictInvoiceUnits = !$this->canManageAllInvoices($roles);
+        $approvedUnitsByPao = $restrictInvoiceUnits
+            ? $this->loadApprovedUnits($invoice['professor_id']) : [];
+        $invoicedUnitsByProfessor = $this->loadInvoicedUnits($invoice['professor_id'], $id);
         require_once __DIR__ . '/../views/invoices/edit-invoice.php';
     }
 
@@ -276,6 +370,14 @@ class InvoiceController
             }
 
             $unitNumber = $_POST['unit_number'] ?? $oldInvoice['unit_number'];
+            // Una factura anterior conserva su unidad; cambiarla exige aprobación vigente.
+            if (!$canManageAll && (string) $unitNumber !== (string) $oldInvoice['unit_number']) {
+                $this->enforceApprovedUnit(
+                    $oldInvoice['professor_id'], $oldInvoice['pao_id'], $unitNumber,
+                    '/invoices/edit/' . $id
+                );
+            }
+            $this->enforceUniqueUnit($oldInvoice['professor_id'], $oldInvoice['pao_id'], $unitNumber, '/invoices/edit/' . $id, $id);
             $periodMonth = $_POST['period_month'] ?? $oldInvoice['period_month'];
             $periodYear = $_POST['period_year'] ?? $oldInvoice['period_year'];
             $amount = $_POST['amount'] ?? null;
@@ -298,7 +400,7 @@ class InvoiceController
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0777, true);
                         }
-                        $newFileName = md5(time() . $fileName) . '.pdf';
+                        $newFileName = bin2hex(random_bytes(16)) . '.pdf';
                         $destPath = $uploadDir . $newFileName;
                         
                         if (move_uploaded_file($fileTmpPath, $destPath)) {
@@ -322,7 +424,7 @@ class InvoiceController
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0777, true);
                         }
-                        $newFileName = md5(time() . $fileName) . '.pdf';
+                        $newFileName = bin2hex(random_bytes(16)) . '.pdf';
                         $destPath = $uploadDir . $newFileName;
                         
                         if (move_uploaded_file($fileTmpPath, $destPath)) {
@@ -332,7 +434,15 @@ class InvoiceController
                 }
             }
 
-            if ($this->invoiceModel->update($id, $unitNumber, $periodMonth, $periodYear, $amount, $status, $paymentProofPath, $comprobantePath, $observacion)) {
+            try {
+                $updated = $this->invoiceModel->update($id, $unitNumber, $periodMonth, $periodYear, $amount, $status, $paymentProofPath, $comprobantePath, $observacion);
+            } catch (DuplicateInvoiceException $e) {
+                $this->rejectDuplicateInvoice($e, [
+                    $paymentProofPath !== ($oldInvoice['payment_proof_path'] ?? null) ? $paymentProofPath : null,
+                    $comprobantePath !== ($oldInvoice['comprobante_path'] ?? null) ? $comprobantePath : null
+                ], '/invoices/edit/' . $id);
+            }
+            if ($updated) {
                 $userId = $_SESSION['user_id'] ?? null;
                 $newData = [
                     'unit_number' => $unitNumber,

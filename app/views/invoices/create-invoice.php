@@ -30,6 +30,11 @@
         </div>
 
         <main class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+            <?php if (!empty($_SESSION['flash_error'])): ?>
+                <div role="alert" class="m-8 p-4 rounded-xl bg-red-50 text-red-700">
+                    <?php echo htmlspecialchars($_SESSION['flash_error']); unset($_SESSION['flash_error']); ?>
+                </div>
+            <?php endif; ?>
             <form action="<?php echo BASE_PATH; ?>/invoices/store" method="POST" enctype="multipart/form-data" class="p-8">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
 
@@ -138,12 +143,17 @@
                             <label for="unit_number" class="font-bold text-gray-800">Unidad</label>
                         </div>
                         <select id="unit_number" name="unit_number" required
+                            aria-describedby="unitApprovalMessage"
                             class="w-full px-4 py-3 border-0 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-purple-400 outline-none text-gray-700 font-medium">
-                            <option value="1">📚 Unidad 1</option>
-                            <option value="2">📚 Unidad 2</option>
-                            <option value="3">📚 Unidad 3</option>
-                            <option value="4">📚 Unidad 4</option>
+                            <option value="">Seleccione primero un profesor y un PAO</option>
+                            <?php for ($unit = 1; $unit <= 4; $unit++): ?>
+                                <option value="<?php echo $unit; ?>" disabled>📚 Unidad <?php echo $unit; ?></option>
+                            <?php endfor; ?>
                         </select>
+                        <p id="unitApprovalMessage" role="status" class="text-sm text-purple-700 mt-3">
+                            Solo se permite una factura por profesor, PAO y unidad. Las unidades ya facturadas no se pueden repetir.
+                        </p>
+                        <noscript><p class="text-sm text-red-700 mt-2">Active JavaScript para consultar las unidades disponibles.</p></noscript>
                     </div>
 
                     <!-- Mes del Período -->
@@ -368,7 +378,7 @@
                         <i class="fas fa-arrow-left"></i>
                         Cancelar
                     </a>
-                    <button type="submit"
+                    <button type="submit" id="saveInvoice" disabled
                         class="flex-1 py-4 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg">
                         <i class="fas fa-save"></i>
                         Guardar Factura
@@ -379,6 +389,52 @@
     </div>
 
     <script>
+        const approvedUnitsByPao = <?php echo json_encode($approvedUnitsByPao, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR); ?>;
+        const invoicedUnitsByProfessor = <?php echo json_encode($invoicedUnitsByProfessor, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR); ?>;
+        const restrictInvoiceUnits = <?php echo $restrictInvoiceUnits ? 'true' : 'false'; ?>;
+        const professorInput = document.querySelector('[name="professor_id"]');
+        const paoSelect = document.getElementById('pao_id');
+        const unitSelect = document.getElementById('unit_number');
+        const approvalMessage = document.getElementById('unitApprovalMessage');
+        const saveInvoice = document.getElementById('saveInvoice');
+
+        function updateApprovedInvoiceUnits() {
+            const previousUnit = unitSelect.value;
+            const approved = approvedUnitsByPao?.[paoSelect.value] || [];
+            const billed = invoicedUnitsByProfessor?.[professorInput?.value]?.[paoSelect.value] || [];
+            const ready = !!professorInput?.value && !!paoSelect.value;
+            const verified = invoicedUnitsByProfessor !== null && (!restrictInvoiceUnits || approvedUnitsByPao !== null);
+            const placeholder = unitSelect.options[0];
+            placeholder.textContent = ready ? 'Seleccione una unidad disponible' : 'Seleccione primero un profesor y un PAO';
+            Array.from(unitSelect.options).slice(1).forEach(option => {
+                const isApproved = approved.includes(Number(option.value));
+                const isBilled = billed.includes(Number(option.value));
+                option.disabled = !ready || !verified || isBilled || (restrictInvoiceUnits && !isApproved);
+                const status = isBilled ? 'Ya facturada' : restrictInvoiceUnits ? (isApproved ? 'Aprobada' : 'Sin aprobación') : 'Disponible';
+                option.textContent = `Unidad ${option.value} - ${status}`;
+            });
+            const availableOptions = Array.from(unitSelect.options).slice(1).filter(option => !option.disabled);
+            unitSelect.value = availableOptions.some(option => option.value === previousUnit) ? previousUnit : '';
+            const available = availableOptions.length > 0;
+            saveInvoice.disabled = !available || !unitSelect.value;
+            saveInvoice.classList.toggle('opacity-50', saveInvoice.disabled);
+            saveInvoice.classList.toggle('cursor-not-allowed', saveInvoice.disabled);
+            const rules = restrictInvoiceUnits
+                ? 'Solo puede facturar unidades aprobadas de su portafolio que no tengan factura. Las unidades sin aprobación o ya facturadas están deshabilitadas.'
+                : 'Solo se permite una factura por profesor, PAO y unidad. Las unidades ya facturadas están deshabilitadas, sin importar el mes ni el estado de la factura.';
+            approvalMessage.textContent = !verified
+                ? 'No se pudo verificar las unidades disponibles. Recargue la página para intentar nuevamente.'
+                : !ready
+                    ? rules + ' Seleccione un profesor y un PAO.'
+                    : available
+                        ? rules
+                        : 'No hay unidades disponibles para facturar en este PAO. ' + rules;
+        }
+        paoSelect.addEventListener('change', updateApprovedInvoiceUnits);
+        unitSelect.addEventListener('change', updateApprovedInvoiceUnits);
+        professorInput?.addEventListener('change', updateApprovedInvoiceUnits);
+        updateApprovedInvoiceUnits();
+
         function displayFileInBox(input, previewId, uploadId) {
             const preview = document.getElementById(previewId);
             const upload = document.getElementById(uploadId);

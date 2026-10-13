@@ -252,6 +252,22 @@ class PortfolioModel extends BaseModel
     }
 
     // Y el resto de los métodos que ya tenías...
+    public function getApprovedUnitsByProfessor($professorId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT DISTINCT pao_id, unit_number FROM {$this->table}
+             WHERE professor_id = ? AND unit_approved = 1
+             ORDER BY pao_id, unit_number"
+        );
+        $stmt->execute([$professorId]);
+
+        $units = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $units[(int) $row['pao_id']][] = (int) $row['unit_number'];
+        }
+        return $units;
+    }
+
     public function findByKeys($professorId, $paoId, $unitNumber)
     {
         $query = "SELECT * FROM " . $this->table . " WHERE professor_id = ? AND pao_id = ? AND unit_number = ?";

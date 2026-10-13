@@ -18,6 +18,11 @@
 
     <div class="main-content">
         <main class="max-w-4xl mx-auto">
+            <?php if (!empty($_SESSION['flash_error'])): ?>
+                <div role="alert" class="mb-4 p-4 rounded-xl bg-red-50 text-red-700">
+                    <?php echo htmlspecialchars($_SESSION['flash_error']); unset($_SESSION['flash_error']); ?>
+                </div>
+            <?php endif; ?>
             <!-- Header con Gradiente -->
             <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-8 rounded-t-2xl shadow-xl">
                 <div class="flex items-center justify-center mb-4">
@@ -71,11 +76,22 @@
                         </div>
                         <select id="unit_number" name="unit_number" required
                             class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 font-medium">
-                            <option value="1" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 1) ? 'selected' : ''; ?>>📚 Unidad 1</option>
-                            <option value="2" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 2) ? 'selected' : ''; ?>>📚 Unidad 2</option>
-                            <option value="3" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 3) ? 'selected' : ''; ?>>📚 Unidad 3</option>
-                            <option value="4" <?php echo (isset($invoice['unit_number']) && $invoice['unit_number'] == 4) ? 'selected' : ''; ?>>📚 Unidad 4</option>
+                            <?php for ($unit = 1; $unit <= 4; $unit++):
+                                $isCurrentUnit = (int) $invoice['unit_number'] === $unit;
+                                $isApprovedUnit = in_array($unit, $approvedUnitsByPao[(int) $invoice['pao_id']] ?? [], true);
+                                $isBilledUnit = in_array($unit, $invoicedUnitsByProfessor[(int) $invoice['professor_id']][(int) $invoice['pao_id']] ?? [], true);
+                                $isDisabledUnit = $invoicedUnitsByProfessor === null || $isBilledUnit
+                                    || ($restrictInvoiceUnits && !$isCurrentUnit && !$isApprovedUnit);
+                            ?>
+                                <option value="<?php echo $unit; ?>" <?php echo $isCurrentUnit ? 'selected' : ''; ?> <?php echo $isDisabledUnit ? 'disabled' : ''; ?>>
+                                    📚 Unidad <?php echo $unit; ?><?php echo $isBilledUnit ? ' - Ya facturada' : ($restrictInvoiceUnits && !$isApprovedUnit ? ($isCurrentUnit ? ' - Unidad original' : ' - Sin aprobación') : ''); ?>
+                                </option>
+                            <?php endfor; ?>
                         </select>
+                        <?php if ($restrictInvoiceUnits): ?>
+                            <p class="text-sm text-purple-700 mt-3">Puede conservar la unidad original de esta factura. Para cambiarla, seleccione una unidad aprobada de su portafolio en este PAO.</p>
+                        <?php endif; ?>
+                        <p class="text-sm text-purple-700 mt-3">Las unidades que tienen otra factura están deshabilitadas. Solo se permite una factura por profesor, PAO y unidad, sin importar el mes ni su estado.</p>
                     </div>
 
                     <!-- Mes del Período -->
