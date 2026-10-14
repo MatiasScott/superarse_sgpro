@@ -59,6 +59,11 @@
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
 
     <div class="main-content">
+        <?php if (!empty($_SESSION['flash_success'])): ?>
+            <div role="status" class="mb-6 p-4 rounded-xl bg-green-50 text-green-700">
+                <?php echo htmlspecialchars($_SESSION['flash_success']); unset($_SESSION['flash_success']); ?>
+            </div>
+        <?php endif; ?>
         <?php if ($canCreateInvoice) { ?>
             <header class="mb-8">
                 <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-xl p-8 text-white">
@@ -314,7 +319,8 @@
                                     </td>
                                     <?php
                                     $isOwnerInvoice = (int)($invoice['professor_id'] ?? 0) === (int)($_SESSION['user_id'] ?? 0);
-                                    $canEditRow = $canManageInvoices || ($canEditInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
+                                    $canEditRow = PermissionHelper::can('invoices', 'manage_upload_permission', $roles)
+                                        || $canManageInvoices || ($canEditInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
                                     $canDeleteRow = $canManageInvoices || ($canDeleteInvoices && (!$hasManageOwnInvoices || $isOwnerInvoice));
                                     ?>
                                     <?php if ($canEditRow || $canDeleteRow) { ?>

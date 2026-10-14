@@ -139,9 +139,10 @@
             "Profesor"
         ],
         "create": [
-            "Profesor"
+            "Director de docencia"
         ],
         "edit": [
+            "Director de docencia",
             "Profesor"
         ],
         "delete": [

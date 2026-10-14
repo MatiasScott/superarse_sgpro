@@ -87,6 +87,7 @@ class Router
                 'delete' => ['require_post' => true, 'require_csrf' => true],
             ],
             'Invoice' => [
+                'updateUploadPermission' => ['require_post' => true, 'require_csrf' => true],
                 'store' => ['require_post' => true, 'require_csrf' => true],
                 'update' => ['require_post' => true, 'require_csrf' => true],
                 'delete' => ['require_post' => true, 'require_csrf' => true],
@@ -219,10 +220,11 @@ class Router
                 '__default' => ['module' => 'contracts', 'actions' => ['manage_all', 'manage_own']],
             ],
             'Invoice' => [
+                'updateUploadPermission' => ['module' => 'invoices', 'actions' => ['manage_upload_permission']],
                 'index' => ['module' => 'invoices', 'actions' => ['view']],
                 'create' => ['module' => 'invoices', 'actions' => ['create', 'manage_all']],
                 'store' => ['module' => 'invoices', 'actions' => ['create', 'manage_all']],
-                'edit' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all']],
+                'edit' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all', 'manage_upload_permission']],
                 'update' => ['module' => 'invoices', 'actions' => ['edit', 'manage_all']],
                 'delete' => ['module' => 'invoices', 'actions' => ['delete', 'manage_all']],
                 '__default' => ['module' => 'invoices', 'actions' => ['manage_all', 'manage_own']],
@@ -479,6 +481,7 @@ class Router
         // Rutas de gestión de Facturas
         $this->addRoute('/invoices', 'Invoice@index');
         $this->addRoute('/invoices/create', 'Invoice@create');
+        $this->addRoute('/invoices/upload-permission/update/{id}', 'Invoice@updateUploadPermission');
         $this->addRoute('/invoices/store', 'Invoice@store');
         $this->addRoute('/invoices/edit/{id}', 'Invoice@edit');
         $this->addRoute('/invoices/update/{id}', 'Invoice@update');

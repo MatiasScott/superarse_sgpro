@@ -62,6 +62,7 @@ class PermissionHelper
                 'manage_own' => [self::ROLE_PROFESOR],
             ],
             'invoices' => [
+                'manage_upload_permission' => [self::ROLE_SUPER_ADMIN, self::ROLE_DIRECTOR],
                 'view' => self::allRoles(),
                 'create' => [self::ROLE_PROFESOR],
                 'edit' => [self::ROLE_PROFESOR],
@@ -183,6 +184,11 @@ class PermissionHelper
                 })));
 
                 $normalized[$module][$action] = $inputRoles;
+                if ($module === 'invoices' && $action === 'manage_upload_permission') {
+                    $normalized[$module][$action] = array_values(array_intersect(
+                        $inputRoles, [self::ROLE_SUPER_ADMIN, self::ROLE_DIRECTOR]
+                    ));
+                }
             }
         }
 

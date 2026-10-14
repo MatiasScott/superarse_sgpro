@@ -84,7 +84,7 @@ class InvoiceApprovalTestRoles extends RoleModel
     }
 }
 
-class InvoiceApprovalWriteReached extends RuntimeException {}
+class InvoiceApprovalWriteReached extends Exception {}
 
 class InvoiceApprovalTestInvoices extends InvoiceModel
 {
@@ -107,7 +107,8 @@ class InvoiceApprovalTestInvoices extends InvoiceModel
     public function find($id)
     {
         return ['id' => $id, 'professor_id' => 42, 'pao_id' => 10,
-            'unit_number' => 2, 'period_month' => 'Enero', 'period_year' => 2026];
+            'unit_number' => 2, 'period_month' => 'Enero', 'period_year' => 2026,
+            'invoice_date' => '2026-10-13', 'amount' => '100', 'status' => 'Pendiente'];
     }
 
     public function create($professorId, $paoId, $unitNumber, $periodMonth, $periodYear, $invoiceDate, $amount, $status, $paymentProofPath = null, $comprobantePath = null, $observacion = null)
@@ -124,7 +125,20 @@ class InvoiceApprovalTestInvoices extends InvoiceModel
         $this->writes++;
         throw new InvoiceApprovalWriteReached();
     }
+
+    public function updateProfessorAttachment($id, $professorId, $paymentProofPath, $observacion)
+    {
+        $this->writes++;
+        throw new InvoiceApprovalWriteReached();
+    }
 }
+
+// Aislar el test de la matriz de permisos que los administradores editan en la aplicacion.
+$permissions = new ReflectionProperty(PermissionHelper::class, 'cachedPermissions');
+$permissions->setAccessible(true);
+$permissions->setValue(null, ['invoices' => [
+    'create' => ['Profesor'], 'edit' => ['Profesor'], 'manage_all' => ['Super Administrador']
+]]);
 
 define('BASE_PATH', '/sgpro');
 session_start();
@@ -137,7 +151,7 @@ $_POST = ['_csrf' => 'invoice-test-token', 'professor_id' => '42',
 $portfolios = new InvoiceApprovalTestPortfolio();
 $invoices = new InvoiceApprovalTestInvoices();
 $isUpdate = strpos($scenario, 'update-') === 0;
-$expectedWrite = in_array($scenario, ['approved', 'admin', 'update-approved', 'update-original'], true);
+$expectedWrite = in_array($scenario, ['approved', 'admin', 'update-original'], true);
 
 switch ($scenario) {
     case 'unapproved':
@@ -202,7 +216,7 @@ register_shutdown_function(function () use ($scenario, $expectedWrite, &$reached
     if ($scenario === 'admin' || $scenario === 'update-original') {
         $ok = $ok && $portfolios->calls === [];
     }
-    if (strpos($scenario, 'update-duplicate') === 0 || $scenario === 'update-original') {
+    if ($scenario === 'update-duplicate-admin') {
         $ok = $ok && $invoices->uniqueChecks[0][3] === 7;
     }
     if (!$ok) {

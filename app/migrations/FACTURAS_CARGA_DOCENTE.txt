@@ -1,0 +1,35 @@
+HABILITACION DEL PDF POR FACTURA
+
+Despliegue
+Ejecutar una vez app/migrations/20261014_invoice_upload_per_invoice.sql
+antes de desplegar esta funcionalidad. Agrega invoices.invoice_upload_enabled
+con valor inicial 0 para facturas existentes y nuevas. No cambia los PDF.
+La antigua columna users.invoice_upload_enabled deja de usarse y puede
+conservarse; no es necesario ejecutar la migracion anterior.
+La migracion 20261013_invoice_upload_permission.sql es obsoleta y ya no
+contiene instrucciones para modificar users.
+
+Administrador
+En Permisos > Facturas, asignar "Habilitar/deshabilitar carga de PDF".
+Solo Super Administrador y Director de docencia pueden recibir esa accion.
+Por defecto ambos la tienen; no otorga acceso a editar datos de usuarios.
+Al crear una factura se fija 0 - Deshabilitado, aunque se manipule el formulario.
+En Editar Factura, el bloque de habilitacion permite guardar la decision:
+1 - Habilitado: el docente puede subir o reemplazar el PDF de esta factura.
+0 - Deshabilitado: al pulsar Subir Factura PDF se muestra un modal informativo.
+El cambio no limita a usuarios que tienen permiso invoices/manage_all.
+La opcion permite abrir Editar Factura para decidir la habilitacion, sin
+otorgar permiso para crear facturas ni modificar los datos financieros.
+El docente no ve ni puede cambiar el selector. El cambio se guarda con
+"Guardar habilitacion", independientemente de los datos de la factura.
+La habilitacion de una factura no afecta a las otras del mismo docente.
+
+Docente
+En Editar Factura solo puede cargar el PDF (si esta habilitado) y modificar
+la observacion. Profesor, PAO, unidad, mes, anio, fecha, monto, estado y
+comprobante son de solo lectura. Puede consultar los PDF existentes aunque
+la carga este deshabilitada y seguir guardando observaciones.
+El servidor rechaza cambios a datos protegidos, comprobantes ajenos y
+cargas de PDF no autorizadas. El permiso se verifica en cada carga.
+El PDF debe ser valido y no superar los 50 MB; tambien aplica el limite
+de carga configurado en PHP/servidor.

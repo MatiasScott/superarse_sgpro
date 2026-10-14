@@ -115,6 +115,7 @@
                                                         name="permissions[<?php echo htmlspecialchars($module); ?>][<?php echo htmlspecialchars($action); ?>][]"
                                                         value="<?php echo htmlspecialchars($roleName); ?>"
                                                         <?php echo $checked ? 'checked' : ''; ?>
+                                                        <?php echo $module === 'invoices' && $action === 'manage_upload_permission' && !in_array($roleName, ['Super Administrador', 'Director de docencia'], true) ? 'disabled' : ''; ?>
                                                         class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                     >
                                                 </td>

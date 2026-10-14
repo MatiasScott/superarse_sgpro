@@ -13,6 +13,24 @@ class InvoiceModel extends BaseModel {
         parent::__construct();
     }
 
+    public function canUploadInvoice($id) {
+        $stmt = $this->db->prepare("SELECT invoice_upload_enabled FROM invoices WHERE id = ?");
+        $stmt->execute([$id]);
+        $value = $stmt->fetchColumn();
+        if ($value === false) {
+            throw new RuntimeException('Factura no encontrada al verificar la habilitación.');
+        }
+        return (int) $value === 1;
+    }
+
+    public function setInvoiceUploadPermission($id, $enabled) {
+        if (!in_array($enabled, [0, 1], true)) {
+            throw new InvalidArgumentException('La habilitación debe ser 0 o 1.');
+        }
+        $stmt = $this->db->prepare("UPDATE invoices SET invoice_upload_enabled = ? WHERE id = ?");
+        return $stmt->execute([$enabled, $id]);
+    }
+
     public function getInvoicedUnitsByProfessor($professorId = null, $excludeInvoiceId = null) {
         $query = "SELECT DISTINCT professor_id, pao_id, unit_number FROM {$this->table} WHERE 1 = 1";
         $params = [];
@@ -77,7 +95,7 @@ class InvoiceModel extends BaseModel {
     }
     
     public function create($professorId, $paoId, $unitNumber, $periodMonth, $periodYear, $invoiceDate, $amount, $status, $paymentProofPath = null, $comprobantePath = null, $observacion = null) {
-        $query = "INSERT INTO " . $this->table . " (professor_id, pao_id, unit_number, period_month, period_year, invoice_date, amount, status, payment_proof_path, comprobante_path, observacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO " . $this->table . " (professor_id, pao_id, unit_number, period_month, period_year, invoice_date, amount, status, payment_proof_path, comprobante_path, observacion, invoice_upload_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(1, $professorId);
         $stmt->bindParam(2, $paoId);
@@ -118,6 +136,13 @@ class InvoiceModel extends BaseModel {
         return $this->saveUniqueUnit($invoice['professor_id'], $invoice['pao_id'], $unitNumber, $id, function () use ($stmt) {
             return $stmt->execute();
         });
+    }
+
+    public function updateProfessorAttachment($id, $professorId, $paymentProofPath, $observacion) {
+        $stmt = $this->db->prepare(
+            "UPDATE {$this->table} SET payment_proof_path = ?, observacion = ? WHERE id = ? AND professor_id = ?"
+        );
+        return $stmt->execute([$paymentProofPath, $observacion, $id, $professorId]);
     }
 
     public function getInvoicesWithDetails($userId = null, $userRoles = [], $year = null) {

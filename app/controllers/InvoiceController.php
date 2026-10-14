@@ -42,6 +42,141 @@ class InvoiceController
         exit();
     }
 
+    public function updateUploadPermission($id)
+    {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_PATH . '/');
+            exit();
+        }
+        $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
+        PermissionHelper::enforce('invoices', 'manage_upload_permission', $roles, '/invoices');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !CsrfHelper::validateRequest()) {
+            http_response_code($_SERVER['REQUEST_METHOD'] !== 'POST' ? 405 : 419);
+            echo 'Solicitud inválida. Se requiere POST y un token CSRF válido.';
+            exit();
+        }
+        try {
+            $value = $_POST['invoice_upload_enabled'] ?? null;
+            if (!in_array($value, ['0', '1'], true)) {
+                throw new InvalidArgumentException('Seleccione 1 - Habilitado o 0 - Deshabilitado.');
+            }
+            $invoice = $this->invoiceModel->find($id);
+            if (!$invoice) {
+                throw new InvalidArgumentException('Factura no encontrada.');
+            }
+            if (!array_key_exists('invoice_upload_enabled', $invoice)) {
+                throw new RuntimeException('Debe aplicar la migración de habilitación por factura.');
+            }
+            $oldEnabled = (int) $invoice['invoice_upload_enabled'];
+            if (!$this->invoiceModel->setInvoiceUploadPermission($id, (int) $value)) {
+                throw new RuntimeException('No se pudo guardar la habilitación de la factura.');
+            }
+            $this->auditLogModel->logAction(
+                $_SESSION['user_id'], 'UPDATE', 'invoices', $id,
+                ['invoice_upload_enabled' => $oldEnabled], ['invoice_upload_enabled' => (int) $value]
+            );
+            $_SESSION['flash_success'] = 'Carga del PDF ' . ($value === '1' ? 'habilitada' : 'deshabilitada') . ' para esta factura.';
+        } catch (PDOException | RuntimeException | InvalidArgumentException $e) {
+            error_log('InvoiceController::updateUploadPermission error: ' . $e->getMessage());
+            $_SESSION['flash_error'] = $e instanceof PDOException
+                ? 'No se pudo guardar la habilitación. Detalle en logs.' : $e->getMessage();
+        }
+        header('Location: ' . BASE_PATH . '/invoices/edit/' . $id);
+        exit();
+    }
+
+    private function loadInvoiceUploadPermission($invoiceId)
+    {
+        try {
+            return $this->invoiceModel->canUploadInvoice($invoiceId);
+        } catch (PDOException | RuntimeException $e) {
+            error_log('InvoiceController::loadInvoiceUploadPermission error: ' . $e->getMessage());
+            $_SESSION['flash_error'] = 'No se pudo verificar el permiso de carga de facturas. Contacte al administrador.';
+            return false;
+        }
+    }
+
+    private function rejectProfessorInvoiceUpdate($message, $id)
+    {
+        $_SESSION['flash_error'] = $message;
+        header('Location: ' . BASE_PATH . '/invoices/edit/' . $id);
+        exit();
+    }
+
+    private function storeInvoicePdf($file)
+    {
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            throw new RuntimeException('No se pudo recibir el PDF de la factura. Revise el tamaño y vuelva a intentar.');
+        }
+        if (strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) !== 'pdf'
+            || (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']) !== 'application/pdf') {
+            throw new RuntimeException('La factura debe ser un archivo PDF válido.');
+        }
+        if ($file['size'] > 50 * 1024 * 1024) {
+            throw new RuntimeException('La factura PDF no debe superar los 50 MB.');
+        }
+        $directory = __DIR__ . '/../../public/uploads/proofs/';
+        if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('No se pudo preparar el directorio de facturas.');
+        }
+        $name = bin2hex(random_bytes(16)) . '.pdf';
+        if (!move_uploaded_file($file['tmp_name'], $directory . $name)) {
+            throw new RuntimeException('No se pudo guardar el PDF de la factura.');
+        }
+        return '/uploads/proofs/' . $name;
+    }
+
+    private function updateProfessorInvoice($id, array $oldInvoice)
+    {
+        foreach (['professor_id', 'pao_id', 'unit_number', 'period_month', 'period_year',
+            'invoice_date', 'amount', 'status', 'invoice_upload_enabled'] as $field) {
+            if (array_key_exists($field, $_POST)
+                && (!is_scalar($_POST[$field]) || (string) $_POST[$field] !== (string) $oldInvoice[$field])) {
+                $this->rejectProfessorInvoiceUpdate('Como docente solo puede modificar el PDF de la factura y la observación.', $id);
+            }
+        }
+        if (isset($_FILES['comprobante']) && $_FILES['comprobante']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $this->rejectProfessorInvoiceUpdate('El comprobante solo puede ser modificado por un administrador.', $id);
+        }
+        $path = $oldInvoice['payment_proof_path'] ?? null;
+        $newPath = null;
+        $observation = $_POST['observacion'] ?? ($oldInvoice['observacion'] ?? null);
+        if ($observation !== null && !is_string($observation)) {
+            $this->rejectProfessorInvoiceUpdate('La observación debe ser un texto válido.', $id);
+        }
+        if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if (!$this->loadInvoiceUploadPermission($id)) {
+                $_SESSION['invoice_upload_blocked'] = true;
+                $this->rejectProfessorInvoiceUpdate(
+                    $_SESSION['flash_error'] ?? 'No se encuentra habilitada la opción de subir factura. Contacte al administrador.', $id
+                );
+            }
+        }
+        try {
+            if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $newPath = $this->storeInvoicePdf($_FILES['payment_proof']);
+                $path = $newPath;
+            }
+            if (!$this->invoiceModel->updateProfessorAttachment($id, $_SESSION['user_id'], $path, $observation)) {
+                throw new RuntimeException('No se pudo actualizar el PDF o la observación de la factura.');
+            }
+        } catch (PDOException | RuntimeException $e) {
+            error_log('InvoiceController::updateProfessorInvoice error: ' . $e->getMessage());
+            if ($newPath !== null && !unlink(__DIR__ . '/../../public' . $newPath)) {
+                error_log('InvoiceController::updateProfessorInvoice: no se pudo limpiar ' . $newPath);
+            }
+            $this->rejectProfessorInvoiceUpdate('No se pudo actualizar la factura. ' . ($e instanceof PDOException ? 'Detalle en logs.' : $e->getMessage()), $id);
+        }
+        $this->auditLogModel->logAction(
+            $_SESSION['user_id'], 'UPDATE', 'invoices', $id,
+            ['payment_proof_path' => $oldInvoice['payment_proof_path'] ?? null, 'observacion' => $oldInvoice['observacion'] ?? null],
+            ['payment_proof_path' => $path, 'observacion' => $observation]
+        );
+        $_SESSION['flash_success'] = 'PDF y observación de la factura actualizados correctamente.';
+        header('Location: ' . BASE_PATH . '/invoices');
+        exit();
+    }
+
     private function loadApprovedUnits($professorId)
     {
         try {
@@ -148,6 +283,7 @@ class InvoiceController
         $approvedUnitsByPao = $restrictInvoiceUnits
             ? $this->loadApprovedUnits($_SESSION['user_id']) : [];
         $invoicedUnitsByProfessor = $this->loadInvoicedUnits($restrictInvoiceUnits ? $_SESSION['user_id'] : null);
+        $invoiceUploadEnabled = !$restrictInvoiceUnits;
         
         $pageTitle = 'Crear Nueva Factura';
         require_once __DIR__ . '/../views/invoices/create-invoice.php';
@@ -201,6 +337,13 @@ class InvoiceController
                 $this->enforceApprovedUnit($professorId, $paoId, $unitNumber, '/invoices/create');
             }
             $this->enforceUniqueUnit($professorId, $paoId, $unitNumber, '/invoices/create');
+            if (!$canManageAll && isset($_FILES['payment_proof'])
+                && $_FILES['payment_proof']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $_SESSION['flash_error'] = $_SESSION['flash_error'] ?? 'No se encuentra habilitada la opción de subir factura. Contacte al administrador.';
+                $_SESSION['invoice_upload_blocked'] = true;
+                header('Location: ' . BASE_PATH . '/invoices/create');
+                exit();
+            }
 
             // Manejar archivo de factura PDF
             if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === UPLOAD_ERR_OK) {
@@ -297,7 +440,7 @@ class InvoiceController
         }
 
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        if (!PermissionHelper::canAny('invoices', ['edit', 'manage_all'], $roles)) {
+        if (!PermissionHelper::canAny('invoices', ['edit', 'manage_all', 'manage_upload_permission'], $roles)) {
             header('Location: ' . BASE_PATH . '/invoices');
             exit();
         }
@@ -308,7 +451,8 @@ class InvoiceController
             header('Location: ' . BASE_PATH . '/invoices');
             exit();
         }
-        if (!$this->canManageAllInvoices($roles)
+        $canDecideInvoiceUpload = PermissionHelper::can('invoices', 'manage_upload_permission', $roles);
+        if (!$this->canManageAllInvoices($roles) && !$canDecideInvoiceUpload
             && (int) $invoice['professor_id'] !== (int) $_SESSION['user_id']) {
             $this->denyAccessToInvoices();
         }
@@ -333,9 +477,11 @@ class InvoiceController
 
         $pageTitle = 'Editar Factura: ' . htmlspecialchars($invoice['id']);
         $restrictInvoiceUnits = !$this->canManageAllInvoices($roles);
-        $approvedUnitsByPao = $restrictInvoiceUnits
-            ? $this->loadApprovedUnits($invoice['professor_id']) : [];
-        $invoicedUnitsByProfessor = $this->loadInvoicedUnits($invoice['professor_id'], $id);
+        $approvedUnitsByPao = [];
+        $invoicedUnitsByProfessor = $restrictInvoiceUnits ? [] : $this->loadInvoicedUnits($invoice['professor_id'], $id);
+        $invoiceUploadEnabled = !$restrictInvoiceUnits || (
+            (int) $invoice['professor_id'] === (int) $_SESSION['user_id'] && $this->loadInvoiceUploadPermission($id)
+        );
         require_once __DIR__ . '/../views/invoices/edit-invoice.php';
     }
 
@@ -368,15 +514,12 @@ class InvoiceController
             if (!$canManageAll && (int)$oldInvoice['professor_id'] !== (int)$_SESSION['user_id']) {
                 $this->denyAccessToInvoices();
             }
+            if (!$canManageAll) {
+                $this->updateProfessorInvoice($id, $oldInvoice);
+                return;
+            }
 
             $unitNumber = $_POST['unit_number'] ?? $oldInvoice['unit_number'];
-            // Una factura anterior conserva su unidad; cambiarla exige aprobación vigente.
-            if (!$canManageAll && (string) $unitNumber !== (string) $oldInvoice['unit_number']) {
-                $this->enforceApprovedUnit(
-                    $oldInvoice['professor_id'], $oldInvoice['pao_id'], $unitNumber,
-                    '/invoices/edit/' . $id
-                );
-            }
             $this->enforceUniqueUnit($oldInvoice['professor_id'], $oldInvoice['pao_id'], $unitNumber, '/invoices/edit/' . $id, $id);
             $periodMonth = $_POST['period_month'] ?? $oldInvoice['period_month'];
             $periodYear = $_POST['period_year'] ?? $oldInvoice['period_year'];

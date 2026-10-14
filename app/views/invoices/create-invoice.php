@@ -37,6 +37,12 @@
             <?php endif; ?>
             <form action="<?php echo BASE_PATH; ?>/invoices/store" method="POST" enctype="multipart/form-data" class="p-8">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                <?php if (PermissionHelper::can('invoices', 'manage_upload_permission', $roles)): ?>
+                    <div class="bg-teal-50 p-6 rounded-xl border-2 border-teal-200 mb-6">
+                        <p class="font-bold text-gray-800">Carga del PDF por el docente: 0 - Deshabilitado</p>
+                        <p class="text-sm text-teal-700 mt-2">La factura se crea deshabilitada. Puede habilitar la carga desde Editar Factura después de guardarla.</p>
+                    </div>
+                <?php endif; ?>
 
                 <?php
                 // Detectar si el usuario actual es un profesor (verificando si está en la lista de profesores)
@@ -256,10 +262,11 @@
                         <h3 class="text-lg font-bold text-gray-800">Factura (PDF)</h3>
                         <?php if ($isProfessor): ?>
                             <span class="ml-auto bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                <i class="fas fa-upload mr-1"></i>Puedes subir tu factura
+                                <i class="fas fa-upload mr-1"></i><?php echo $invoiceUploadEnabled ? 'Puedes subir tu factura' : 'Carga deshabilitada'; ?>
                             </span>
                         <?php endif; ?>
                     </div>
+                    <?php if ($invoiceUploadEnabled): ?>
                     <div class="relative border-2 border-dashed border-red-200 rounded-xl p-8 hover:border-red-400 transition-colors duration-200 bg-white">
                         <input type="file" id="payment_proof" name="payment_proof" accept=".pdf"
                             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -281,6 +288,11 @@
                                         <p class="text-xs text-red-600 font-semibold">Archivo seleccionado:</p>
                                         <p class="text-sm font-bold text-gray-800 file-name"></p>
                                     </div>
+                                    <?php else: ?>
+                                        <button type="button" data-invoice-upload-blocked class="w-full rounded-xl p-6 bg-gray-50 border-2 border-dashed border-gray-300 text-gray-600">
+                                            <i class="fas fa-lock mr-2"></i>Subir Factura PDF — Deshabilitado
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                                 <button type="button" onclick="clearFileInBox('payment_proof', 'payment_proof_preview', 'payment_proof_upload')"
                                     class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2">
@@ -388,6 +400,7 @@
         </main>
     </div>
 
+    <?php require __DIR__ . '/upload-disabled-modal.php'; ?>
     <script>
         const approvedUnitsByPao = <?php echo json_encode($approvedUnitsByPao, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR); ?>;
         const invoicedUnitsByProfessor = <?php echo json_encode($invoicedUnitsByProfessor, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR); ?>;

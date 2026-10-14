@@ -23,6 +23,11 @@
                     <?php echo htmlspecialchars($_SESSION['flash_error']); unset($_SESSION['flash_error']); ?>
                 </div>
             <?php endif; ?>
+            <?php if (!empty($_SESSION['flash_success'])): ?>
+                <div role="status" class="mb-4 p-4 rounded-xl bg-green-50 text-green-700">
+                    <?php echo htmlspecialchars($_SESSION['flash_success']); unset($_SESSION['flash_success']); ?>
+                </div>
+            <?php endif; ?>
             <!-- Header con Gradiente -->
             <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-8 rounded-t-2xl shadow-xl">
                 <div class="flex items-center justify-center mb-4">
@@ -43,6 +48,26 @@
                 // Si no puede gestionar todo, se comporta como usuario con edición de su propia factura.
                 $isProfessor = !PermissionHelper::can('invoices', 'manage_all', $roles ?? null);
                 ?>
+                <?php if ($canDecideInvoiceUpload): ?>
+                    <div class="bg-teal-50 p-6 rounded-xl border-2 border-teal-200">
+                        <label for="invoice_upload_enabled" class="block font-bold text-gray-800 mb-3">Habilitar carga del PDF para esta factura</label>
+                        <?php if (array_key_exists('invoice_upload_enabled', $invoice)): ?>
+                            <div class="flex gap-3">
+                                <select id="invoice_upload_enabled" name="invoice_upload_enabled" form="invoiceUploadPermissionForm" class="border-2 border-teal-300 bg-white rounded-lg p-3">
+                                    <option value="0" <?php echo (int) $invoice['invoice_upload_enabled'] === 0 ? 'selected' : ''; ?>>0 - Deshabilitado</option>
+                                    <option value="1" <?php echo (int) $invoice['invoice_upload_enabled'] === 1 ? 'selected' : ''; ?>>1 - Habilitado</option>
+                                </select>
+                                <button type="submit" form="invoiceUploadPermissionForm" class="bg-teal-600 text-white px-4 py-2 rounded-lg">Guardar habilitación</button>
+                            </div>
+                            <p class="text-sm text-teal-700 mt-3">Esta decisión solo afecta a esta factura. El docente no puede verla ni modificarla.</p>
+                        <?php else: ?>
+                            <p role="alert" class="text-red-700">Debe aplicar la migración de habilitación por factura.</p>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($isProfessor && !$canDecideInvoiceUpload): ?>
+                    <p class="bg-blue-50 text-blue-700 p-4 rounded-xl">Como docente solo puede cargar o reemplazar el PDF de la factura, cuando esté habilitado, y modificar la observación. Los demás datos son de solo lectura.</p>
+                <?php endif; ?>
 
                 <!-- Sección Información General (Solo Lectura) -->
                 <div class="bg-gray-50 bg-opacity-50 p-6 rounded-xl border-2 border-gray-200">
@@ -65,6 +90,7 @@
                 </div>
 
                 <!-- Grid de Unidad y Período -->
+                <fieldset <?php echo $isProfessor ? 'disabled' : ''; ?>>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Unidad -->
                     <div class="bg-purple-50 bg-opacity-50 p-6 rounded-xl border-2 border-purple-200">
@@ -88,10 +114,9 @@
                                 </option>
                             <?php endfor; ?>
                         </select>
-                        <?php if ($restrictInvoiceUnits): ?>
-                            <p class="text-sm text-purple-700 mt-3">Puede conservar la unidad original de esta factura. Para cambiarla, seleccione una unidad aprobada de su portafolio en este PAO.</p>
+                        <?php if (!$isProfessor): ?>
+                            <p class="text-sm text-purple-700 mt-3">Las unidades que tienen otra factura están deshabilitadas. Solo se permite una factura por profesor, PAO y unidad, sin importar el mes ni su estado.</p>
                         <?php endif; ?>
-                        <p class="text-sm text-purple-700 mt-3">Las unidades que tienen otra factura están deshabilitadas. Solo se permite una factura por profesor, PAO y unidad, sin importar el mes ni su estado.</p>
                     </div>
 
                     <!-- Mes del Período -->
@@ -184,6 +209,7 @@
                         <?php endif; ?>
                     </div>
                 </div>
+                </fieldset>
 
                 <!-- Sección Factura PDF -->
                 <div class="bg-red-50 bg-opacity-50 p-6 rounded-xl border-2 border-red-200">
@@ -217,7 +243,7 @@
                         </div>
                     <?php endif; ?>
 
-                    <!-- Todos pueden subir archivos -->
+                    <?php if ($invoiceUploadEnabled): ?>
                     <div class="border-2 border-dashed border-red-300 rounded-xl p-6 text-center bg-white hover:bg-red-50 transition duration-200">
                         <input type="file" id="payment_proof" name="payment_proof" accept=".pdf" class="hidden" onchange="updateFileName(this, 'payment_proof_label')">
                         <label for="payment_proof" class="cursor-pointer">
@@ -226,9 +252,14 @@
                                 <?php echo !empty($invoice['payment_proof_path']) ? 'Reemplazar Factura PDF' : 'Subir Factura PDF'; ?>
                             </p>
                             <p class="text-xs text-gray-500">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-                            <p class="text-xs text-gray-400 mt-2">Solo archivos PDF (máximo 10MB)</p>
+                            <p class="text-xs text-gray-400 mt-2">Solo archivos PDF (máximo 50MB)</p>
                         </label>
                     </div>
+                    <?php else: ?>
+                        <button type="button" data-invoice-upload-blocked class="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 text-gray-600">
+                            <i class="fas fa-lock mr-2"></i>Subir Factura PDF — Deshabilitado
+                        </button>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Sección Comprobante PDF -->
@@ -295,27 +326,7 @@
                         <h3 class="text-lg font-bold text-gray-800">Observación</h3>
                     </div>
 
-                    <?php if ($isProfessor): ?>
-                        <!-- Solo lectura para profesores -->
-                        <?php if (!empty($invoice['observacion'])): ?>
-                            <div class="bg-white rounded-xl p-6 border-2 border-yellow-300">
-                                <div class="flex items-start gap-3">
-                                    <i class="fas fa-quote-left text-yellow-500 text-2xl mt-1"></i>
-                                    <p class="text-gray-700 flex-1 italic"><?php echo nl2br(htmlspecialchars($invoice['observacion'])); ?></p>
-                                    <i class="fas fa-quote-right text-yellow-500 text-2xl mt-1"></i>
-                                </div>
-                            </div>
-                        <?php else: ?>
-                            <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200">
-                                <i class="fas fa-comment-slash text-4xl text-gray-300 mb-2"></i>
-                                <p class="text-gray-500">Aún no hay observaciones agregadas</p>
-                                <p class="text-sm text-gray-400 mt-1">El administrador puede agregar comentarios</p>
-                            </div>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <!-- Textarea editable para administradores -->
-                        <textarea id="observacion" name="observacion" rows="4" class="w-full px-4 py-3 border-2 border-yellow-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200 resize-vertical" placeholder="Agregar observaciones o comentarios sobre la factura..."><?php echo isset($invoice['observacion']) ? htmlspecialchars($invoice['observacion']) : ''; ?></textarea>
-                    <?php endif; ?>
+                    <textarea id="observacion" name="observacion" rows="4" class="w-full px-4 py-3 border-2 border-yellow-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200 resize-vertical" placeholder="Agregar observaciones o comentarios sobre la factura..."><?php echo isset($invoice['observacion']) ? htmlspecialchars($invoice['observacion']) : ''; ?></textarea>
                 </div>
 
                 <!-- Botones de Acción -->
@@ -324,15 +335,23 @@
                         <i class="fas fa-arrow-left mr-2"></i>
                         Cancelar
                     </a>
+                    <?php if (!$isProfessor || (int) $invoice['professor_id'] === (int) $_SESSION['user_id']): ?>
                     <button type="submit" class="flex-1 py-3 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl shadow-lg hover:from-cyan-600 hover:to-blue-600 transition duration-200 font-semibold">
                         <i class="fas fa-save mr-2"></i>
                         Actualizar Factura
                     </button>
+                    <?php endif; ?>
                 </div>
             </form>
+            <?php if ($canDecideInvoiceUpload): ?>
+                <form id="invoiceUploadPermissionForm" action="<?php echo BASE_PATH; ?>/invoices/upload-permission/update/<?php echo (int) $invoice['id']; ?>" method="POST">
+                    <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                </form>
+            <?php endif; ?>
         </main>
     </div>
 
+    <?php require __DIR__ . '/upload-disabled-modal.php'; ?>
     <script>
         function updateFileName(input, labelId) {
             const label = document.getElementById(labelId);

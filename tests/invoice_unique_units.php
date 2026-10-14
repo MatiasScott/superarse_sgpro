@@ -123,6 +123,9 @@ foreach (['create', 'duplicate-create', 'update', 'duplicate-update', 'map'] as 
         checkUniqueInvoice($connection->writes === ($connection->duplicate ? 0 : 1), 'Unexpected database write');
         checkUniqueInvoice(!$connection->transaction, 'Open transaction');
         foreach ($connection->queries as [$query, $params]) {
+            if (strpos($query, 'INSERT INTO invoices') === 0) {
+                checkUniqueInvoice(strpos($query, 'invoice_upload_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)') !== false, 'New invoices must start disabled');
+            }
             if (strpos($query, 'SELECT id FROM invoices') === 0) {
                 checkUniqueInvoice(strpos($query, 'FOR UPDATE') !== false, 'Duplicate query must use current locking read');
                 checkUniqueInvoice($params === ($isUpdate ? [42, 10, 3, 7] : [42, 10, 3]), 'Incorrect uniqueness parameters');

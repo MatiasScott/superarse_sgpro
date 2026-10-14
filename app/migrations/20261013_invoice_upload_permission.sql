@@ -1,0 +1,4 @@
+-- OBSOLETA: no ejecutar cambios en users para esta funcionalidad.
+-- La habilitacion pertenece a cada factura, no al usuario.
+-- Ejecutar en su lugar 20261014_invoice_upload_per_invoice.sql.
+-- Si la columna ya existe en users, el codigo no la utiliza.

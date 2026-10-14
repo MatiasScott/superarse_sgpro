@@ -304,6 +304,7 @@ class PermissionController
             'delete' => 'Eliminar',
             'manage_all' => 'Gestionar todo',
             'manage_own' => 'Gestionar propio (global)',
+            'manage_upload_permission' => 'Habilitar/deshabilitar carga de PDF',
         ];
     }
 
