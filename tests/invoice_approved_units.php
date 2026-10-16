@@ -6,6 +6,7 @@ require_once __DIR__ . '/../app/controllers/InvoiceController.php';
 $scenario = $argv[1] ?? '';
 $allowed = ['model', 'approved', 'unapproved', 'no-portfolio', 'wrong-pao', 'missing-unit',
     'invalid-unit', 'other-professor', 'database-error', 'admin',
+    'director-create-for-professor',
     'update-approved', 'update-rejected', 'update-original', 'duplicate', 'duplicate-admin',
     'update-duplicate', 'update-duplicate-admin', 'invoice-check-error', 'duplicate-race'];
 if (!in_array($scenario, $allowed, true)) {
@@ -137,7 +138,7 @@ class InvoiceApprovalTestInvoices extends InvoiceModel
 $permissions = new ReflectionProperty(PermissionHelper::class, 'cachedPermissions');
 $permissions->setAccessible(true);
 $permissions->setValue(null, ['invoices' => [
-    'create' => ['Profesor'], 'edit' => ['Profesor'], 'manage_all' => ['Super Administrador']
+    'create' => ['Profesor', 'Director de docencia'], 'edit' => ['Profesor'], 'manage_all' => ['Super Administrador']
 ]]);
 
 define('BASE_PATH', '/sgpro');
@@ -151,7 +152,7 @@ $_POST = ['_csrf' => 'invoice-test-token', 'professor_id' => '42',
 $portfolios = new InvoiceApprovalTestPortfolio();
 $invoices = new InvoiceApprovalTestInvoices();
 $isUpdate = strpos($scenario, 'update-') === 0;
-$expectedWrite = in_array($scenario, ['approved', 'admin', 'update-original'], true);
+$expectedWrite = in_array($scenario, ['approved', 'admin', 'director-create-for-professor', 'update-original'], true);
 
 switch ($scenario) {
     case 'unapproved':
@@ -180,6 +181,9 @@ switch ($scenario) {
         $portfolios->fail = true;
         $_POST['unit_number'] = '4';
         break;
+    case 'director-create-for-professor':
+        $_POST['professor_id'] = '43';
+        break;
     case 'update-original':
         $_POST['unit_number'] = '2';
         break;
@@ -200,7 +204,9 @@ switch ($scenario) {
 $reflection = new ReflectionClass(InvoiceController::class);
 $controller = $reflection->newInstanceWithoutConstructor();
 foreach (['portfolioModel' => $portfolios, 'invoiceModel' => $invoices,
-    'roleModel' => new InvoiceApprovalTestRoles(in_array($scenario, ['admin', 'duplicate-admin', 'update-duplicate-admin'], true) ? 'Super Administrador' : 'Profesor')] as $name => $model) {
+    'roleModel' => new InvoiceApprovalTestRoles(in_array($scenario, ['admin', 'duplicate-admin', 'update-duplicate-admin'], true)
+        ? 'Super Administrador'
+        : ($scenario === 'director-create-for-professor' ? 'Director de docencia' : 'Profesor'))] as $name => $model) {
     $property = $reflection->getProperty($name);
     $property->setAccessible(true);
     $property->setValue($controller, $model);
@@ -213,7 +219,7 @@ register_shutdown_function(function () use ($scenario, $expectedWrite, &$reached
     if (!$expectedWrite && $scenario !== 'other-professor') {
         $ok = $ok && !empty($_SESSION['flash_error']);
     }
-    if ($scenario === 'admin' || $scenario === 'update-original') {
+    if ($scenario === 'admin' || $scenario === 'director-create-for-professor' || $scenario === 'update-original') {
         $ok = $ok && $portfolios->calls === [];
     }
     if ($scenario === 'update-duplicate-admin') {

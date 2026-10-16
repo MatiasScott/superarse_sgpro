@@ -36,6 +36,20 @@ class InvoiceController
         return PermissionHelper::can('invoices', 'manage_all', $roles);
     }
 
+    private function isProfessorInvoiceUser($roles)
+    {
+        $roleNames = array_column($roles, 'role_name');
+        $administrativeRoles = [
+            'Coordinador académico',
+            'Director de docencia',
+            'Super Administrador',
+            'Talento humano'
+        ];
+
+        return in_array('Profesor', $roleNames, true)
+            && !array_intersect($administrativeRoles, $roleNames);
+    }
+
     private function denyAccessToInvoices()
     {
         header('Location: ' . BASE_PATH . '/invoices');
@@ -279,11 +293,12 @@ class InvoiceController
         
         // Obtener PAOs para el formulario
         $paos = $this->paoModel->getAll();
-        $restrictInvoiceUnits = !$this->canManageAllInvoices($roles);
+        $isProfessor = $this->isProfessorInvoiceUser($roles);
+        $restrictInvoiceUnits = $isProfessor;
         $approvedUnitsByPao = $restrictInvoiceUnits
             ? $this->loadApprovedUnits($_SESSION['user_id']) : [];
         $invoicedUnitsByProfessor = $this->loadInvoicedUnits($restrictInvoiceUnits ? $_SESSION['user_id'] : null);
-        $invoiceUploadEnabled = !$restrictInvoiceUnits;
+        $invoiceUploadEnabled = $this->canManageAllInvoices($roles);
         
         $pageTitle = 'Crear Nueva Factura';
         require_once __DIR__ . '/../views/invoices/create-invoice.php';
@@ -324,16 +339,17 @@ class InvoiceController
 
             $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
             $canManageAll = $this->canManageAllInvoices($roles);
+            $isProfessor = $this->isProfessorInvoiceUser($roles);
             if ($canManageAll && $unitNumber === null) {
                 $unitNumber = 1;
             }
             if (!PermissionHelper::canAny('invoices', ['create', 'manage_all'], $roles)) {
                 $this->denyAccessToInvoices();
             }
-            if (!$canManageAll && (int)$professorId !== (int)$_SESSION['user_id']) {
+            if ($isProfessor && (int)$professorId !== (int)$_SESSION['user_id']) {
                 $this->denyAccessToInvoices();
             }
-            if (!$canManageAll) {
+            if ($isProfessor) {
                 $this->enforceApprovedUnit($professorId, $paoId, $unitNumber, '/invoices/create');
             }
             $this->enforceUniqueUnit($professorId, $paoId, $unitNumber, '/invoices/create');

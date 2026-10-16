@@ -45,19 +45,14 @@
                 <?php endif; ?>
 
                 <?php
-                // Detectar si el usuario actual es un profesor (verificando si está en la lista de profesores)
                 $currentUserId = $_SESSION['user_id'] ?? null;
 
-                // Buscar si el usuario actual está en la lista de profesores
                 $selectedProfessorId = null;
                 $selectedProfessorName = '';
-                $isProfessor = false;
 
-                if (isset($professors) && is_array($professors) && $currentUserId) {
+                if ($isProfessor && isset($professors) && is_array($professors) && $currentUserId) {
                     foreach ($professors as $prof) {
                         if ($prof['id'] == $currentUserId) {
-                            // El usuario actual ES un profesor
-                            $isProfessor = true;
                             $selectedProfessorId = $prof['id'];
                             $selectedProfessorName = $prof['name'];
                             break;
