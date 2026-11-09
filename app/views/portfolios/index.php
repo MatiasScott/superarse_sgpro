@@ -53,6 +53,8 @@
     $canEditPortfolios = PermissionHelper::can('portfolios', 'edit', $roles ?? null);
     $canDeletePortfolios = PermissionHelper::can('portfolios', 'delete', $roles ?? null);
     $hasManageOwnPortfolios = PermissionHelper::can('portfolios', 'manage_own', $roles ?? null);
+    // Roles que pueden ver todos los portafolios (acceso de solo lectura)
+    $canViewAllPortfolios = $this->portfolioModel->canViewAllPortfolios($roles ?? []);
     ?>
     <?php require_once __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="main-content">
@@ -159,7 +161,6 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <?php
-                                        $portfolioType = $portfolio['portfolio_type'] ?? 'academico';
                                         $approvedUnits = count(array_filter($portfolio['units'], function ($unit) {
                                             return !empty($unit['unit_approved']) && $unit['unit_approved'] == 1;
                                         }));
@@ -167,16 +168,23 @@
                                         $unitsWithFiles = 0;
                                         foreach ($portfolio['units'] as $unit) {
                                             $hasFiles = false;
+                                            // Usar el tipo de cada unidad (el grupo no tiene portfolio_type)
+                                            $portfolioType = $unit['portfolio_type'] ?? 'academico';
                                             $docenciaColumn = 'docencia_' . $portfolioType . '_path';
                                             $practicasColumn = 'practicas_' . $portfolioType . '_path';
                                             $titulacionColumn = 'titulacion_' . $portfolioType . '_path';
 
+                                            // Considerar también las columnas antiguas
+                                            $hasDocencia = !empty($unit[$docenciaColumn]) || !empty($unit['docencia_path']);
+                                            $hasPracticas = !empty($unit[$practicasColumn]) || !empty($unit['practicas_path']);
+                                            $hasTitulacion = !empty($unit[$titulacionColumn]) || !empty($unit['titulacion_path']);
+
                                             if ($portfolioType === 'academico') {
-                                                $hasFiles = !empty($unit[$docenciaColumn]);
+                                                $hasFiles = $hasDocencia;
                                             } elseif ($portfolioType === 'practico') {
-                                                $hasFiles = !empty($unit[$docenciaColumn]) && !empty($unit[$practicasColumn]);
+                                                $hasFiles = $hasDocencia && $hasPracticas;
                                             } elseif ($portfolioType === 'titulacion') {
-                                                $hasFiles = !empty($unit[$docenciaColumn]) && !empty($unit[$practicasColumn]) && !empty($unit[$titulacionColumn]);
+                                                $hasFiles = $hasDocencia && $hasPracticas && $hasTitulacion;
                                             }
 
                                             if ($hasFiles) {
@@ -202,6 +210,11 @@
                                                 <a href="<?php echo BASE_PATH; ?>/portfolios/edit/<?php echo htmlspecialchars($portfolio['id']); ?>" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
                                                     <i class="fas fa-edit"></i>
                                                     <span>Editar</span>
+                                                </a>
+                                            <?php elseif ($canViewAllPortfolios): ?>
+                                                <a href="<?php echo BASE_PATH; ?>/portfolios/edit/<?php echo htmlspecialchars($portfolio['id']); ?>" class="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center space-x-2">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span>Ver</span>
                                                 </a>
                                             <?php endif; ?>
                                             

@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN a2enmod rewrite
 
+COPY php-uploads.ini /usr/local/etc/php/conf.d/99-uploads.ini
+
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri \

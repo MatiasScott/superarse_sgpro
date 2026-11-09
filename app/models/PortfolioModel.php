@@ -141,17 +141,20 @@ class PortfolioModel extends BaseModel
         return $stmt->execute([$portfolioType, $professorId, $paoId]);
     }
 
+    // Roles que pueden ver todos los portafolios (listado y modo solo lectura)
+    public function canViewAllPortfolios($userRoles = [])
+    {
+        $roleNames = array_column($userRoles, 'role_name');
+        return in_array('Coordinador académico', $roleNames) ||
+               in_array('Director de docencia', $roleNames) ||
+               in_array('Talento humano', $roleNames) ||
+               in_array('Super Administrador', $roleNames);
+    }
+
     // Método para obtener portafolios según el rol del usuario
     public function getPortfoliosWithDetails($userid, $userRoles = [])
     {
-        // Extraer nombres de roles del array
-        $roleNames = array_column($userRoles, 'role_name');
-        
-        // Verificar si es Coordinador académico, Director de docencia o Super Administrador
-        $canViewAll = in_array('Coordinador académico', $roleNames) || 
-                      in_array('Director de docencia', $roleNames) ||
-                      in_array('Talento humano', $roleNames) || 
-                      in_array('Super Administrador', $roleNames);
+        $canViewAll = $this->canViewAllPortfolios($userRoles);
         
         if ($canViewAll) {
             // Coordinador, Director o Super Admin ven todos los portafolios

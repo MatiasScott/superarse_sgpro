@@ -13,6 +13,9 @@ require_once __DIR__ . '/../helpers/PermissionHelper.php';
 
 class PortfolioController
 {
+    private const MAX_FILES_PER_UPLOAD = 30;
+    private const MAX_FILE_SIZE_BYTES = 8388608; // 8 MB
+
     private $portfolioModel;
     private $userModel;
     private $paoModel;
@@ -31,6 +34,106 @@ class PortfolioController
     private function canManageAllPortfolios($roles)
     {
         return PermissionHelper::can('portfolios', 'manage_all', $roles);
+    }
+
+    private function uploadErrorMessage($errorCode)
+    {
+        switch ($errorCode) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return 'supera el tamaño máximo permitido de 8 MB.';
+            case UPLOAD_ERR_PARTIAL:
+                return 'se subió de forma incompleta. Intente nuevamente.';
+            case UPLOAD_ERR_NO_FILE:
+                return 'no se recibió el archivo.';
+            case UPLOAD_ERR_NO_TMP_DIR:
+            case UPLOAD_ERR_CANT_WRITE:
+            case UPLOAD_ERR_EXTENSION:
+                return 'no se pudo guardar por un error del servidor.';
+            default:
+                return 'no se pudo subir (error ' . $errorCode . ').';
+        }
+    }
+
+    /**
+     * Procesa un grupo de archivos subidos ($_FILES[$fieldName]) validando
+     * cantidad máxima (30) y tamaño máximo por archivo (8 MB).
+     * Devuelve las rutas guardadas y agrega los fallos a $uploadErrors.
+     */
+    private function processUploadedFiles($fieldName, $uploadDir, callable $nameBuilder, array &$uploadErrors)
+    {
+        $uploadedFiles = [];
+        if (!isset($_FILES[$fieldName]) || empty($_FILES[$fieldName]['name'][0])) {
+            return $uploadedFiles;
+        }
+
+        $names = $_FILES[$fieldName]['name'];
+        $selectedCount = count(array_filter($names, function ($n) {
+            return $n !== null && $n !== '';
+        }));
+        if ($selectedCount > self::MAX_FILES_PER_UPLOAD) {
+            $uploadErrors[] = 'Se seleccionaron ' . $selectedCount . ' archivos; el máximo permitido es ' .
+                self::MAX_FILES_PER_UPLOAD . ' por carga. No se subió ningún archivo de este grupo.';
+            return $uploadedFiles;
+        }
+
+        foreach ($names as $key => $name) {
+            if ($name === null || $name === '') {
+                continue;
+            }
+            $originalName = basename($name);
+            $error = $_FILES[$fieldName]['error'][$key];
+            if ($error !== UPLOAD_ERR_OK) {
+                $uploadErrors[] = '"' . $originalName . '" ' . $this->uploadErrorMessage($error);
+                continue;
+            }
+            if ((int)$_FILES[$fieldName]['size'][$key] > self::MAX_FILE_SIZE_BYTES) {
+                $uploadErrors[] = '"' . $originalName . '" supera el tamaño máximo permitido de 8 MB.';
+                continue;
+            }
+            $fileName = $nameBuilder($key, $originalName);
+            if (move_uploaded_file($_FILES[$fieldName]['tmp_name'][$key], $uploadDir . $fileName)) {
+                $uploadedFiles[] = '/uploads/portfolios/' . $fileName;
+            } else {
+                $uploadErrors[] = '"' . $originalName . '" no se pudo guardar en el servidor.';
+            }
+        }
+        return $uploadedFiles;
+    }
+
+    private function flashUploadResult(array $uploadErrors, $uploadedCount)
+    {
+        if ($uploadedCount > 0) {
+            $_SESSION['success_message'] = $uploadedCount . ' archivo(s) subido(s) correctamente.';
+        }
+        if (!empty($uploadErrors)) {
+            $_SESSION['error_message'] = 'Algunos archivos NO se subieron: ' . implode(' | ', $uploadErrors);
+        }
+    }
+
+    private function reportFilesOmittedByPhp(array &$uploadErrors)
+    {
+        $expectedCount = (int)($_POST['expected_upload_count'] ?? 0);
+        if ($expectedCount <= 0) {
+            return;
+        }
+
+        $receivedCount = 0;
+        foreach (['docencia_files', 'practicas_files', 'titulacion_files'] as $fieldName) {
+            if (!isset($_FILES[$fieldName]['name']) || !is_array($_FILES[$fieldName]['name'])) {
+                continue;
+            }
+            foreach ($_FILES[$fieldName]['name'] as $name) {
+                if ($name !== null && $name !== '') {
+                    $receivedCount++;
+                }
+            }
+        }
+
+        if ($receivedCount < $expectedCount) {
+            $uploadErrors[] = 'El navegador envió ' . $expectedCount . ' archivo(s), pero PHP solo recibió ' .
+                $receivedCount . '. Revise max_file_uploads y reinicie el servidor antes de volver a cargar.';
+        }
     }
 
     public function index()
@@ -121,63 +224,40 @@ class PortfolioController
         }
 
         // Procesar archivo de docencia
-        if (isset($_FILES['docencia_files']) && !empty($_FILES['docencia_files']['name'][0])) {
-            $uploadedFiles = [];
-            foreach ($_FILES['docencia_files']['tmp_name'] as $key => $tmpName) {
-                if (!empty($tmpName)) {
-                    $originalName = basename($_FILES['docencia_files']['name'][$key]);
-                    $uniqueName = $unitNumber . '_docencia_' . time() . '_' . $key . '_' . $originalName;
-                    $uploadPath = $uploadDir . $uniqueName;
-                    
-                    if (move_uploaded_file($tmpName, $uploadPath)) {
-                        $uploadedFiles[] = '/uploads/portfolios/' . $uniqueName;
-                    }
-                }
-            }
-            if (!empty($uploadedFiles)) {
-                $data['docencia_' . $portfolioType . '_path'] = json_encode($uploadedFiles);
-            }
+        $uploadErrors = [];
+        $totalUploaded = 0;
+        $uploadedFiles = $this->processUploadedFiles('docencia_files', $uploadDir, function ($key, $originalName) use ($unitNumber) {
+            return $unitNumber . '_docencia_' . time() . '_' . $key . '_' . $originalName;
+        }, $uploadErrors);
+        if (!empty($uploadedFiles)) {
+            $totalUploaded += count($uploadedFiles);
+            $data['docencia_' . $portfolioType . '_path'] = json_encode($uploadedFiles);
         }
 
         // Procesar archivo de prácticas (para practico y titulacion)
-        if (in_array($portfolioType, ['practico', 'titulacion']) && 
-            isset($_FILES['practicas_files']) && !empty($_FILES['practicas_files']['name'][0])) {
-            $uploadedFiles = [];
-            foreach ($_FILES['practicas_files']['tmp_name'] as $key => $tmpName) {
-                if (!empty($tmpName)) {
-                    $originalName = basename($_FILES['practicas_files']['name'][$key]);
-                    $uniqueName = $unitNumber . '_practicas_' . time() . '_' . $key . '_' . $originalName;
-                    $uploadPath = $uploadDir . $uniqueName;
-                    
-                    if (move_uploaded_file($tmpName, $uploadPath)) {
-                        $uploadedFiles[] = '/uploads/portfolios/' . $uniqueName;
-                    }
-                }
-            }
+        if (in_array($portfolioType, ['practico', 'titulacion'])) {
+            $uploadedFiles = $this->processUploadedFiles('practicas_files', $uploadDir, function ($key, $originalName) use ($unitNumber) {
+                return $unitNumber . '_practicas_' . time() . '_' . $key . '_' . $originalName;
+            }, $uploadErrors);
             if (!empty($uploadedFiles)) {
+                $totalUploaded += count($uploadedFiles);
                 $data['practicas_' . $portfolioType . '_path'] = json_encode($uploadedFiles);
             }
         }
 
         // Procesar archivo de titulación (solo para titulacion)
-        if ($portfolioType === 'titulacion' && 
-            isset($_FILES['titulacion_files']) && !empty($_FILES['titulacion_files']['name'][0])) {
-            $uploadedFiles = [];
-            foreach ($_FILES['titulacion_files']['tmp_name'] as $key => $tmpName) {
-                if (!empty($tmpName)) {
-                    $originalName = basename($_FILES['titulacion_files']['name'][$key]);
-                    $uniqueName = $unitNumber . '_titulacion_' . time() . '_' . $key . '_' . $originalName;
-                    $uploadPath = $uploadDir . $uniqueName;
-                    
-                    if (move_uploaded_file($tmpName, $uploadPath)) {
-                        $uploadedFiles[] = '/uploads/portfolios/' . $uniqueName;
-                    }
-                }
-            }
+        if ($portfolioType === 'titulacion') {
+            $uploadedFiles = $this->processUploadedFiles('titulacion_files', $uploadDir, function ($key, $originalName) use ($unitNumber) {
+                return $unitNumber . '_titulacion_' . time() . '_' . $key . '_' . $originalName;
+            }, $uploadErrors);
             if (!empty($uploadedFiles)) {
+                $totalUploaded += count($uploadedFiles);
                 $data['titulacion_' . $portfolioType . '_path'] = json_encode($uploadedFiles);
             }
         }
+
+        $this->reportFilesOmittedByPhp($uploadErrors);
+        $this->flashUploadResult($uploadErrors, $totalUploaded);
 
         // Manejar aprobación de unidad (solo para administradores)
         $canApprove = $canManageAll;
@@ -217,7 +297,10 @@ class PortfolioController
             exit();
         }
         $roles = $this->roleModel->getRolesByUserId($_SESSION['user_id']);
-        if (!PermissionHelper::canAny('portfolios', ['edit', 'manage_all', 'manage_own'], $roles)) {
+        $canEditAny = PermissionHelper::canAny('portfolios', ['edit', 'manage_all', 'manage_own'], $roles);
+        // Los roles que pueden ver todos los portafolios acceden en modo solo lectura
+        $canViewAllPortfolios = $this->portfolioModel->canViewAllPortfolios($roles);
+        if (!$canEditAny && !$canViewAllPortfolios) {
             header('Location: ' . BASE_PATH . '/portfolios');
             exit();
         }
@@ -233,12 +316,15 @@ class PortfolioController
 
         // Verificar que el usuario tenga permiso para editar este portafolio
         $canEditAll = $this->canManageAllPortfolios($roles);
-        
-        // Si es profesor, solo puede editar su propio portafolio
-        if (!$canEditAll && $professorId != $_SESSION['user_id']) {
+        $isOwner = (int)$professorId === (int)$_SESSION['user_id'];
+        $canModify = $canEditAll || ($canEditAny && $isOwner);
+
+        // Si no puede modificar ni ver todos, no tiene acceso
+        if (!$canModify && !$canViewAllPortfolios) {
             header('Location: ' . BASE_PATH . '/portfolios');
             exit();
         }
+        $isReadOnly = !$canModify;
 
         // Obtener todos los datos de portafolio para este profesor y PAO
         $portfolioData = $this->portfolioModel->getPortfolio($professorId, $paoId);
@@ -329,17 +415,18 @@ class PortfolioController
             $existingDocenciaFiles = is_array($decoded) ? $decoded : [$docenciaPath];
         }
         
-        if (isset($_FILES['docencia_files']) && !empty($_FILES['docencia_files']['name'][0])) {
-            $uploadedFiles = [];
-            
-            foreach ($_FILES['docencia_files']['name'] as $key => $name) {
-                if ($_FILES['docencia_files']['error'][$key] === UPLOAD_ERR_OK) {
-                    $fileName = uniqid() . '_' . basename($name);
-                    if (move_uploaded_file($_FILES['docencia_files']['tmp_name'][$key], $uploadFileDir . $fileName)) {
-                        $uploadedFiles[] = '/uploads/portfolios/' . $fileName;
-                    }
-                }
-            }
+        $uploadErrors = [];
+        $totalUploaded = 0;
+        // Usar el mismo formato de nombre que store() para poder mostrar la fecha de subida
+        $makeFileName = function ($section) use ($unitNumber) {
+            return function ($key, $originalName) use ($section, $unitNumber) {
+                return $unitNumber . '_' . $section . '_' . time() . '_' . $key . '_' . $originalName;
+            };
+        };
+
+        $uploadedFiles = $this->processUploadedFiles('docencia_files', $uploadFileDir, $makeFileName('docencia'), $uploadErrors);
+        if (!empty($uploadedFiles)) {
+            $totalUploaded += count($uploadedFiles);
             $existingDocenciaFiles = array_merge($existingDocenciaFiles, $uploadedFiles);
         }
         $data[$docenciaColumn] = !empty($existingDocenciaFiles) ? json_encode($existingDocenciaFiles) : null;
@@ -353,17 +440,9 @@ class PortfolioController
                 $existingPracticasFiles = is_array($decoded) ? $decoded : [$practicasPath];
             }
             
-            if (isset($_FILES['practicas_files']) && !empty($_FILES['practicas_files']['name'][0])) {
-                $uploadedFiles = [];
-                
-                foreach ($_FILES['practicas_files']['name'] as $key => $name) {
-                    if ($_FILES['practicas_files']['error'][$key] === UPLOAD_ERR_OK) {
-                        $fileName = uniqid() . '_' . basename($name);
-                        if (move_uploaded_file($_FILES['practicas_files']['tmp_name'][$key], $uploadFileDir . $fileName)) {
-                            $uploadedFiles[] = '/uploads/portfolios/' . $fileName;
-                        }
-                    }
-                }
+            $uploadedFiles = $this->processUploadedFiles('practicas_files', $uploadFileDir, $makeFileName('practicas'), $uploadErrors);
+            if (!empty($uploadedFiles)) {
+                $totalUploaded += count($uploadedFiles);
                 $existingPracticasFiles = array_merge($existingPracticasFiles, $uploadedFiles);
             }
             $data[$practicasColumn] = !empty($existingPracticasFiles) ? json_encode($existingPracticasFiles) : null;
@@ -378,17 +457,9 @@ class PortfolioController
                 $existingTitulacionFiles = is_array($decoded) ? $decoded : [$titulacionPath];
             }
             
-            if (isset($_FILES['titulacion_files']) && !empty($_FILES['titulacion_files']['name'][0])) {
-                $uploadedFiles = [];
-                
-                foreach ($_FILES['titulacion_files']['name'] as $key => $name) {
-                    if ($_FILES['titulacion_files']['error'][$key] === UPLOAD_ERR_OK) {
-                        $fileName = uniqid() . '_' . basename($name);
-                        if (move_uploaded_file($_FILES['titulacion_files']['tmp_name'][$key], $uploadFileDir . $fileName)) {
-                            $uploadedFiles[] = '/uploads/portfolios/' . $fileName;
-                        }
-                    }
-                }
+            $uploadedFiles = $this->processUploadedFiles('titulacion_files', $uploadFileDir, $makeFileName('titulacion'), $uploadErrors);
+            if (!empty($uploadedFiles)) {
+                $totalUploaded += count($uploadedFiles);
                 $existingTitulacionFiles = array_merge($existingTitulacionFiles, $uploadedFiles);
             }
             $data[$titulacionColumn] = !empty($existingTitulacionFiles) ? json_encode($existingTitulacionFiles) : null;
@@ -406,10 +477,14 @@ class PortfolioController
 
         if ($this->portfolioModel->update($id, $data)) {
             $this->auditLogModel->logAction($_SESSION['user_id'], 'UPDATE', 'portfolios', $id, $oldPortfolio, $data);
+            $this->reportFilesOmittedByPhp($uploadErrors);
+            $this->flashUploadResult($uploadErrors, $totalUploaded);
             header('Location: ' . BASE_PATH . '/portfolios/edit/' . $id);
             exit();
         } else {
-            echo "Error al actualizar el portafolio.";
+            $_SESSION['error_message'] = 'Error al actualizar el portafolio.';
+            header('Location: ' . BASE_PATH . '/portfolios/edit/' . $id);
+            exit();
         }
     }
 
@@ -545,4 +620,3 @@ class PortfolioController
         exit();
     }
 }
-

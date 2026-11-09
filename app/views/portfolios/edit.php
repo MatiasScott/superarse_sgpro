@@ -37,6 +37,47 @@
             <?php unset($_SESSION['error_message']); ?>
         <?php endif; ?>
 
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-6" role="alert">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-xl mr-3"></i>
+                    <p class="font-bold"><?php echo htmlspecialchars($_SESSION['success_message']); ?></p>
+                </div>
+            </div>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
+
+        <?php
+        // Modo solo lectura para roles que pueden ver pero no editar (ej. Talento humano)
+        $isReadOnly = $isReadOnly ?? false;
+
+        if (!function_exists('sgpro_get_unit_files')) {
+            /**
+             * Devuelve los archivos de una sección de la unidad buscando en:
+             * 1) la columna del tipo actual, 2) la columna del tipo propio de la
+             * unidad (si difiere) y 3) la columna antigua (legacy).
+             */
+            function sgpro_get_unit_files($unitPortfolio, $section, $currentType)
+            {
+                if (!$unitPortfolio) {
+                    return [];
+                }
+                $candidates = [$section . '_' . $currentType . '_path'];
+                if (!empty($unitPortfolio['portfolio_type']) && $unitPortfolio['portfolio_type'] !== $currentType) {
+                    $candidates[] = $section . '_' . $unitPortfolio['portfolio_type'] . '_path';
+                }
+                $candidates[] = $section . '_path';
+                foreach ($candidates as $col) {
+                    if (!empty($unitPortfolio[$col])) {
+                        $decoded = json_decode($unitPortfolio[$col], true);
+                        return is_array($decoded) ? $decoded : [$unitPortfolio[$col]];
+                    }
+                }
+                return [];
+            }
+        }
+        ?>
+
         <main class="space-y-6 max-w-6xl mx-auto">
             <!-- Selector de Tipo de Portafolio -->
             <div class="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-200">
@@ -71,14 +112,18 @@
                     }
                     ?>
                     
-                    <?php if ($hasUploadedFiles): ?>
+                    <?php if ($hasUploadedFiles || $isReadOnly): ?>
                         <div class="col-span-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 text-center">
                             <i class="fas fa-lock text-blue-600 text-3xl mb-2"></i>
                             <p class="text-blue-800 font-semibold text-lg mb-1">Tipo de Portafolio: 
                                 <span class="uppercase"><?php echo $currentType; ?></span>
                             </p>
                             <p class="text-blue-600 text-sm">
-                                El tipo está bloqueado porque ya hay archivos subidos. No se puede cambiar el tipo una vez que se han cargado documentos.
+                                <?php if ($isReadOnly): ?>
+                                    Está viendo este portafolio en modo solo lectura.
+                                <?php else: ?>
+                                    El tipo está bloqueado porque ya hay archivos subidos. No se puede cambiar el tipo una vez que se han cargado documentos.
+                                <?php endif; ?>
                             </p>
                         </div>
                     <?php else: ?>
@@ -142,27 +187,17 @@
                 if ($unit['unit_approved']) {
                     $approvedUnits++;
                 }
-                
-                $docenciaColumn = 'docencia_' . $currentType . '_path';
-                $practicasColumn = 'practicas_' . $currentType . '_path';
-                $titulacionColumn = 'titulacion_' . $currentType . '_path';
-                
-                $unitHasFiles = false;
-                if (!empty($unit[$docenciaColumn])) {
-                    $unitHasFiles = true;
-                    $files = json_decode($unit[$docenciaColumn], true);
-                    $totalFiles += is_array($files) ? count($files) : 1;
+
+                // Contar con la misma lógica (y fallbacks) con la que se muestran los archivos
+                $unitFileCount = count(sgpro_get_unit_files($unit, 'docencia', $currentType));
+                if (in_array($currentType, ['practico', 'titulacion'])) {
+                    $unitFileCount += count(sgpro_get_unit_files($unit, 'practicas', $currentType));
                 }
-                if (in_array($currentType, ['practico', 'titulacion']) && !empty($unit[$practicasColumn])) {
-                    $unitHasFiles = true;
-                    $files = json_decode($unit[$practicasColumn], true);
-                    $totalFiles += is_array($files) ? count($files) : 1;
+                if ($currentType === 'titulacion') {
+                    $unitFileCount += count(sgpro_get_unit_files($unit, 'titulacion', $currentType));
                 }
-                if ($currentType === 'titulacion' && !empty($unit[$titulacionColumn])) {
-                    $unitHasFiles = true;
-                    $files = json_decode($unit[$titulacionColumn], true);
-                    $totalFiles += is_array($files) ? count($files) : 1;
-                }
+                $totalFiles += $unitFileCount;
+                $unitHasFiles = $unitFileCount > 0;
                 
                 if ($unitHasFiles && !$unit['unit_approved']) {
                     $pendingUnits++;
@@ -242,29 +277,18 @@
                 
                 $isApproved = $unitPortfolio && $unitPortfolio['unit_approved'];
                 
-                // Verificar si tiene archivos según el tipo
+                // Verificar si tiene archivos según el tipo (misma lógica que la visualización)
                 $hasFiles = false;
                 $fileCount = 0;
                 if ($unitPortfolio) {
-                    $docenciaColumn = 'docencia_' . $currentType . '_path';
-                    $practicasColumn = 'practicas_' . $currentType . '_path';
-                    $titulacionColumn = 'titulacion_' . $currentType . '_path';
-                    
-                    if (!empty($unitPortfolio[$docenciaColumn])) {
-                        $hasFiles = true;
-                        $files = json_decode($unitPortfolio[$docenciaColumn], true);
-                        $fileCount += is_array($files) ? count($files) : 1;
+                    $fileCount = count(sgpro_get_unit_files($unitPortfolio, 'docencia', $currentType));
+                    if (in_array($currentType, ['practico', 'titulacion'])) {
+                        $fileCount += count(sgpro_get_unit_files($unitPortfolio, 'practicas', $currentType));
                     }
-                    if (in_array($currentType, ['practico', 'titulacion']) && !empty($unitPortfolio[$practicasColumn])) {
-                        $hasFiles = true;
-                        $files = json_decode($unitPortfolio[$practicasColumn], true);
-                        $fileCount += is_array($files) ? count($files) : 1;
+                    if ($currentType === 'titulacion') {
+                        $fileCount += count(sgpro_get_unit_files($unitPortfolio, 'titulacion', $currentType));
                     }
-                    if ($currentType === 'titulacion' && !empty($unitPortfolio[$titulacionColumn])) {
-                        $hasFiles = true;
-                        $files = json_decode($unitPortfolio[$titulacionColumn], true);
-                        $fileCount += is_array($files) ? count($files) : 1;
-                    }
+                    $hasFiles = $fileCount > 0;
                 }
                 
                 // Determinar el estado de la unidad
@@ -326,6 +350,7 @@
                         <input type="hidden" name="professor_id" value="<?php echo $professor['id']; ?>">
                         <input type="hidden" name="pao_id" value="<?php echo $pao['id']; ?>">
                         <input type="hidden" name="portfolio_type" value="<?php echo $currentType; ?>">
+                        <input type="hidden" name="expected_upload_count" value="0">
                         <?php if ($unitPortfolio): ?>
                             <input type="hidden" name="portfolio_id" value="<?php echo $unitPortfolio['id']; ?>">
                         <?php endif; ?>
@@ -340,18 +365,9 @@
                             </label>
                             
                             <?php 
-                                // Obtener la columna correcta según el tipo de portafolio
-                                $docenciaColumn = 'docencia_' . $currentType . '_path';
-                                $docenciaPath = $unitPortfolio[$docenciaColumn] ?? null;
-                                // Si no hay archivos en la columna nueva, buscar en la columna antigua
-                                if (empty($docenciaPath) && isset($unitPortfolio['docencia_path']) && !empty($unitPortfolio['docencia_path'])) {
-                                    $docenciaPath = $unitPortfolio['docencia_path'];
-                                }
-                                if ($unitPortfolio && !empty($docenciaPath)):
-                                    $docenciaFiles = json_decode($docenciaPath, true);
-                                    if (!is_array($docenciaFiles)) {
-                                        $docenciaFiles = [$docenciaPath];
-                                    }
+                                // Mismos fallbacks que el contador: tipo actual, tipo de la unidad y columna antigua
+                                $docenciaFiles = sgpro_get_unit_files($unitPortfolio, 'docencia', $currentType);
+                                if (!empty($docenciaFiles)):
                             ?>
                                 <div class="bg-white rounded-lg p-3 mb-3 border border-blue-200">
                                     <div class="flex items-center space-x-2 mb-2">
@@ -397,14 +413,14 @@
                                     <i class="fas fa-lock text-green-600 text-2xl mb-2"></i>
                                     <p class="text-green-800 font-semibold">Unidad aprobada - No se pueden hacer cambios</p>
                                 </div>
-                            <?php else: ?>
+                            <?php elseif (!$isReadOnly): ?>
                             <div class="relative">
                                 <input type="file" id="docencia_file_<?php echo $i; ?>" name="docencia_files[]" accept=".pdf" multiple
                                        class="block w-full text-sm text-gray-600 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-500 file:to-cyan-600 file:text-white hover:file:from-blue-600 hover:file:to-cyan-700 file:cursor-pointer cursor-pointer border-2 border-dashed border-blue-300 rounded-lg p-3 bg-white"
                                        onchange="handleFileSelection(this, 'docencia', <?php echo $i; ?>)">
                                 <p class="text-xs text-gray-500 mt-1 flex items-center">
                                     <i class="fas fa-info-circle mr-1"></i>
-                                    Puedes seleccionar múltiples archivos PDF. Revisa la lista antes de guardar.
+                                    Puedes seleccionar hasta 30 archivos PDF (máx. 8 MB cada uno). Revisa la lista antes de guardar.
                                 </p>
                             </div>
                             <!-- Contenedor para previsualizar archivos seleccionados -->
@@ -439,17 +455,8 @@
                             </label>
                             
                             <?php 
-                                // Obtener la columna correcta según el tipo de portafolio
-                                $practicasColumn = 'practicas_' . $currentType . '_path';
-                                $practicasPath = $unitPortfolio[$practicasColumn] ?? null;
-                                if (empty($practicasPath) && isset($unitPortfolio['practicas_path']) && !empty($unitPortfolio['practicas_path'])) {
-                                    $practicasPath = $unitPortfolio['practicas_path'];
-                                }
-                                if ($unitPortfolio && !empty($practicasPath)):
-                                    $practicasFiles = json_decode($practicasPath, true);
-                                    if (!is_array($practicasFiles)) {
-                                        $practicasFiles = [$practicasPath];
-                                    }
+                                $practicasFiles = sgpro_get_unit_files($unitPortfolio, 'practicas', $currentType);
+                                if (!empty($practicasFiles)):
                             ?>
                                 <div class="bg-white rounded-lg p-3 mb-3 border border-green-200">
                                     <div class="flex items-center space-x-2 mb-2">
@@ -494,14 +501,14 @@
                                     <i class="fas fa-lock text-green-600 text-2xl mb-2"></i>
                                     <p class="text-green-800 font-semibold">Unidad aprobada - No se pueden hacer cambios</p>
                                 </div>
-                            <?php else: ?>
+                            <?php elseif (!$isReadOnly): ?>
                             <div class="relative">
                                 <input type="file" id="practicas_file_<?php echo $i; ?>" name="practicas_files[]" accept=".pdf" multiple
                                        class="block w-full text-sm text-gray-600 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-green-500 file:to-emerald-600 file:text-white hover:file:from-green-600 hover:file:to-emerald-700 file:cursor-pointer cursor-pointer border-2 border-dashed border-green-300 rounded-lg p-3 bg-white"
                                        onchange="handleFileSelection(this, 'practicas', <?php echo $i; ?>)">
                                 <p class="text-xs text-gray-500 mt-1 flex items-center">
                                     <i class="fas fa-info-circle mr-1"></i>
-                                    Puedes seleccionar múltiples archivos PDF. Revisa la lista antes de guardar.
+                                    Puedes seleccionar hasta 30 archivos PDF (máx. 8 MB cada uno). Revisa la lista antes de guardar.
                                 </p>
                             </div>
                             <!-- Contenedor para previsualizar archivos seleccionados -->
@@ -536,17 +543,8 @@
                             </label>
                             
                             <?php 
-                                // Obtener la columna correcta según el tipo de portafolio
-                                $titulacionColumn = 'titulacion_' . $currentType . '_path';
-                                $titulacionPath = $unitPortfolio[$titulacionColumn] ?? null;
-                                if (empty($titulacionPath) && isset($unitPortfolio['titulacion_path']) && !empty($unitPortfolio['titulacion_path'])) {
-                                    $titulacionPath = $unitPortfolio['titulacion_path'];
-                                }
-                                if ($unitPortfolio && !empty($titulacionPath)):
-                                    $titulacionFiles = json_decode($titulacionPath, true);
-                                    if (!is_array($titulacionFiles)) {
-                                        $titulacionFiles = [$titulacionPath];
-                                    }
+                                $titulacionFiles = sgpro_get_unit_files($unitPortfolio, 'titulacion', $currentType);
+                                if (!empty($titulacionFiles)):
                             ?>
                                 <div class="bg-white rounded-lg p-3 mb-3 border border-purple-200">
                                     <div class="flex items-center space-x-2 mb-2">
@@ -591,14 +589,14 @@
                                     <i class="fas fa-lock text-green-600 text-2xl mb-2"></i>
                                     <p class="text-green-800 font-semibold">Unidad aprobada - No se pueden hacer cambios</p>
                                 </div>
-                            <?php else: ?>
+                            <?php elseif (!$isReadOnly): ?>
                             <div class="relative">
                                 <input type="file" id="titulacion_file_<?php echo $i; ?>" name="titulacion_files[]" accept=".pdf" multiple
                                        class="block w-full text-sm text-gray-600 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-purple-500 file:to-pink-600 file:text-white hover:file:from-purple-600 hover:file:to-pink-700 file:cursor-pointer cursor-pointer border-2 border-dashed border-purple-300 rounded-lg p-3 bg-white"
                                        onchange="handleFileSelection(this, 'titulacion', <?php echo $i; ?>)">
                                 <p class="text-xs text-gray-500 mt-1 flex items-center">
                                     <i class="fas fa-info-circle mr-1"></i>
-                                    Puedes seleccionar múltiples archivos PDF. Revisa la lista antes de guardar.
+                                    Puedes seleccionar hasta 30 archivos PDF (máx. 8 MB cada uno). Revisa la lista antes de guardar.
                                 </p>
                             </div>
                             <!-- Contenedor para previsualizar archivos seleccionados -->
@@ -653,6 +651,11 @@
                                     <i class="fas fa-lock text-xl"></i>
                                     <span>Unidad Aprobada - No Editable</span>
                                 </button>
+                            <?php elseif ($isReadOnly): ?>
+                                <div class="bg-blue-50 border-2 border-blue-200 text-blue-700 font-bold py-4 px-6 rounded-xl flex items-center justify-center space-x-3">
+                                    <i class="fas fa-eye text-xl"></i>
+                                    <span>Modo solo lectura</span>
+                                </div>
                             <?php else: ?>
                                 <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-3">
                                     <i class="fas fa-save text-xl"></i>
@@ -720,19 +723,44 @@
 
         // Almacenar archivos seleccionados por tipo y unidad
         const selectedFilesStore = {};
+        const MAX_FILES_PER_UPLOAD = 30;
+        const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB
 
         function handleFileSelection(input, type, unit) {
             const files = Array.from(input.files);
             const key = `${type}_${unit}`;
-            
+            const errors = [];
+
+            // Validar tamaño máximo por archivo (8 MB)
+            let validFiles = files.filter(file => {
+                if (file.size > MAX_FILE_SIZE_BYTES) {
+                    errors.push(`• "${file.name}" pesa ${formatFileSize(file.size)} y supera el máximo de 8 MB.`);
+                    return false;
+                }
+                return true;
+            });
+
+            // Validar cantidad máxima de archivos (30)
+            if (validFiles.length > MAX_FILES_PER_UPLOAD) {
+                errors.push(`• Seleccionó ${validFiles.length} archivos válidos; solo se permiten ${MAX_FILES_PER_UPLOAD} por carga. Se tomaron los primeros ${MAX_FILES_PER_UPLOAD}.`);
+                validFiles = validFiles.slice(0, MAX_FILES_PER_UPLOAD);
+            }
+
+            if (errors.length > 0) {
+                alert('Atención, algunos archivos no se agregaron:\n\n' + errors.join('\n'));
+            }
+
             // Guardar archivos con metadatos
-            selectedFilesStore[key] = files.map((file, index) => ({
+            selectedFilesStore[key] = validFiles.map((file, index) => ({
                 file: file,
                 name: file.name,
                 size: file.size,
                 id: Date.now() + index
             }));
-            
+
+            // Sincronizar el input solo con los archivos válidos
+            updateFileInput(type, unit);
+
             // Mostrar preview
             displayFilePreview(type, unit);
         }
@@ -862,5 +890,4 @@
     <script src="<?php echo BASE_PATH; ?>/js/responsive.js"></script>
 </body>
 </html>
-
 

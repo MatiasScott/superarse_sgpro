@@ -301,3 +301,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<script src="<?php echo BASE_PATH; ?>/js/form-loading.js"></script>
