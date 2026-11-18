@@ -156,6 +156,37 @@ class ReportController
             // Obtener idiomas (todos)
             $languages = $this->cvLanguageProficiencyModel->getAllByProfessorId($userId);
 
+            $attachmentGroups = [
+                ['section' => 'Formación académica', 'records' => $allEducation, 'fields' => ['institution_name', 'degree_title']],
+                ['section' => 'Experiencia profesional', 'records' => $allExperience, 'fields' => ['company_name', 'position']],
+                ['section' => 'Experiencia docente', 'records' => $allTeachingExperience, 'fields' => ['ies', 'denomination']],
+                ['section' => 'Publicaciones', 'records' => $allPublications, 'fields' => ['publication_title']],
+                ['section' => 'Ponencias', 'records' => $allPresentations, 'fields' => ['event_name', 'presentation']],
+            ];
+            $pdfAttachments = [];
+            foreach ($attachmentGroups as $group) {
+                foreach ($group['records'] as $record) {
+                    $filePath = trim((string) ($record['archivo_pdf'] ?? ''));
+                    if ($filePath === '') {
+                        continue;
+                    }
+
+                    $labelParts = [];
+                    foreach ($group['fields'] as $field) {
+                        $value = trim((string) ($record[$field] ?? ''));
+                        if ($value !== '') {
+                            $labelParts[] = $value;
+                        }
+                    }
+
+                    $pdfAttachments[] = [
+                        'section' => $group['section'],
+                        'label' => implode(' - ', $labelParts),
+                        'path' => $filePath,
+                    ];
+                }
+            }
+
             $cvDisplayName = trim((string) (($professorCv['surnames'] ?? '') . ' ' . ($professorCv['first_name'] ?? '')));
             $displayName = $cvDisplayName !== '' ? $cvDisplayName : ($user['name'] ?? '');
             $displayEmail = $professorCv['email'] ?? $user['email'] ?? '';
@@ -192,6 +223,7 @@ class ReportController
                 'work_references' => $workReferences,
                 'personal_references' => $personalReferences,
                 'languages' => $languages,
+                'pdf_attachments' => $pdfAttachments,
                 'has_education' => !empty($allEducation),
                 'has_experience' => !empty($allExperience),
                 'has_training' => !empty($allTraining)

@@ -17,11 +17,12 @@ class CvPresentationsModel extends BaseModel
         $eventName,
         $institutionName,
         $year,
-        $presentation
+        $presentation,
+        $archivo_pdf
     ) {
         $query = "INSERT INTO {$this->table} (
-            professor_id, event_name, institution_name, year, presentation
-        ) VALUES (?, ?, ?, ?, ?)";
+            professor_id, event_name, institution_name, year, presentation, archivo_pdf
+        ) VALUES (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(1, $professorId);
@@ -29,6 +30,7 @@ class CvPresentationsModel extends BaseModel
         $stmt->bindParam(3, $institutionName);
         $stmt->bindParam(4, $year);
         $stmt->bindParam(5, $presentation);
+        $stmt->bindParam(6, $archivo_pdf);
 
         return $stmt->execute();
     }
@@ -47,13 +49,15 @@ class CvPresentationsModel extends BaseModel
         $eventName,
         $institutionName,
         $year,
-        $presentation
+        $presentation,
+        $archivo_pdf
     ) {
         $query = "UPDATE {$this->table} SET 
             event_name = ?,
             institution_name = ?,
             year = ?,
-            presentation = ?
+            presentation = ?,
+            archivo_pdf = ?
         WHERE id = ?";
 
         $stmt = $this->db->prepare($query);
@@ -61,7 +65,8 @@ class CvPresentationsModel extends BaseModel
         $stmt->bindParam(2, $institutionName);
         $stmt->bindParam(3, $year);
         $stmt->bindParam(4, $presentation);
-        $stmt->bindParam(5, $id);
+        $stmt->bindParam(5, $archivo_pdf);
+        $stmt->bindParam(6, $id);
 
         return $stmt->execute();
     }

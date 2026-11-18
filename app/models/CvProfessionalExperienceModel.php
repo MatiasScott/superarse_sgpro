@@ -18,7 +18,7 @@ class CvProfessionalExperienceModel extends BaseModel
         $endDate,
         $companyName,
         $position,
-        $activitiesDescription
+        $activitiesDescription,
     ) {
         $query = "INSERT INTO {$this->table} (
             professor_id, start_date, end_date, company_name, position, activities_description
@@ -50,14 +50,15 @@ class CvProfessionalExperienceModel extends BaseModel
         $endDate,
         $companyName,
         $position,
-        $activitiesDescription
+        $activitiesDescription,
     ) {
         $query = "UPDATE {$this->table} SET 
             start_date = ?,
             end_date = ?,
             company_name = ?,
             position = ?,
-            activities_description = ?
+            activities_description = ?,
+
         WHERE id = ?";
 
         $stmt = $this->db->prepare($query);

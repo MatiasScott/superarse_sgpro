@@ -43,7 +43,7 @@ if ($isLocal) {
     // Configuración LOCAL (XAMPP)
     define('DB_HOST', $env['DB_HOST_LOCAL'] ?? 'localhost');
     define('DB_USER', $env['DB_USER_LOCAL'] ?? 'root');
-    define('DB_PASS', $env['DB_PASS_LOCAL'] ?? 'Superarse.2025');
+    define('DB_PASS', $env['DB_PASS_LOCAL'] ?? 'Patoboris123');
     define('DB_NAME', $env['DB_NAME_LOCAL'] ?? 'superar1_landing_sgpro');
 } else {
     // Configuración PRODUCCIÓN

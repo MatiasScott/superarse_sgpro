@@ -284,7 +284,9 @@
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Institución</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Título</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Registro SENESCYT</th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Archivo</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -294,6 +296,13 @@
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($education['institution_name']); ?></td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($education['degree_title']); ?></td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($education['senescyt_register']); ?></td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <?php if (!empty($education['archivo_pdf'])): ?>
+                                            <a href="<?php echo htmlspecialchars(BASE_PATH . $education['archivo_pdf'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Ver PDF</a>
+                                        <?php else: ?>
+                                            Sin archivo
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <div class="flex items-center gap-2">
                                             <button onclick="editRow(this)" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
@@ -355,6 +364,7 @@
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">IES</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Denominación</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Asignaturas</th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Archivo PDF</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
@@ -366,6 +376,13 @@
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($exp['ies']); ?></td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($exp['denomination']); ?></td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($exp['subjects']); ?></td>
+                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <?php if (!empty($exp['archivo_pdf'])): ?>
+                                            <a href="<?php echo htmlspecialchars(BASE_PATH . $exp ['archivo_pdf'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Ver PDF</a>
+                                        <?php else: ?>
+                                            Sin archivo
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <div class="flex items-center gap-2">
                                             <button onclick="editRow(this)" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
@@ -574,6 +591,7 @@
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Institución</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Año</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ponencia</th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Archivo PDF</th>
                                 <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
@@ -584,6 +602,13 @@
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($presentation['institution_name']); ?></td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($presentation['year']); ?></td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm"><?php echo htmlspecialchars($presentation['presentation']); ?></td>
+                                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <?php if (!empty($presentation['archivo_pdf'])): ?>
+                                            <a href="<?php echo htmlspecialchars(BASE_PATH . $presentation['archivo_pdf'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Ver PDF</a>
+                                        <?php else: ?>
+                                            Sin archivo
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                         <div class="flex items-center gap-2">
                                             <button onclick="editRow(this)" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
@@ -859,7 +884,7 @@
                 </h3>
                 <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
-            <form id="educationForm" action="<?php echo BASE_PATH; ?>/professor/education/store" method="POST" class="px-6 py-4">
+            <form id="educationForm" action="<?php echo BASE_PATH; ?>/professor/education/store" method="POST" enctype="multipart/form-data" class="px-6 py-4">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="educationId">
                 <div class="mb-3">
@@ -877,6 +902,11 @@
                 <div class="mb-4">
                     <label for="senescyt_register" class="block text-gray-700 text-sm font-semibold mb-1.5">Registro SENESCYT:</label>
                     <input type="text" name="senescyt_register" id="senescyt_register" class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" placeholder="Número de registro (opcional)">
+                </div>
+                <div class="mb-4">
+                    <label for="archivo_pdf" class="block text-gray-700 text-sm font-semibold mb-1.5">Documento PDF:</label>
+                    <input type="file" name="archivo_pdf" id="archivo_pdf" accept=".pdf,application/pdf" class="w-full text-sm text-gray-700">
+                    <p class="mt-1 text-xs text-gray-500">Seleccione un archivo PDF.</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-3 border-t border-gray-200">
                     <button type="button" id="cancelBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
@@ -949,7 +979,7 @@
                 </h3>
                 <button id="closeProfesionalModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
-            <form id="profesionalForm" action="<?php echo BASE_PATH; ?>/professor/professional-experience/store" method="POST" class="px-6 py-4">
+            <form id="profesionalForm" action="<?php echo BASE_PATH; ?>/professor/professional-experience/store" method="POST" enctype="multipart/form-data" class="px-6 py-4">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="profesionalId">
                 <div class="mb-3">
@@ -972,6 +1002,7 @@
                     <label for="profesional_activities_description" class="block text-gray-700 text-sm font-semibold mb-1.5">Descripción:</label>
                     <textarea name="activities_description" id="profesional_activities_description" rows="3" class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none" placeholder="Descripción de actividades y logros"></textarea>
                 </div>
+              
                 <div class="flex justify-end gap-2 pt-3 border-t border-gray-200">
                     <button type="button" id="cancelProfesionalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
@@ -996,7 +1027,7 @@
                 </h3>
                 <button id="closeDocenteModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
-            <form id="docenteForm" action="<?php echo BASE_PATH; ?>/professor/teaching-experience/store" method="POST" class="px-6 py-4">
+            <form id="docenteForm" action="<?php echo BASE_PATH; ?>/professor/teaching-experience/store" method="POST" enctype="multipart/form-data" class="px-6 py-4">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="docenteId">
                 <div class="mb-3">
@@ -1009,15 +1040,20 @@
                 </div>
                 <div class="mb-3">
                     <label for="docente_ies_name" class="block text-gray-700 text-sm font-semibold mb-1.5">IES:</label>
-                    <input type="text" name="ies_name" id="docente_ies_name" required class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="Institución de Educación Superior">
+                    <input type="text" name="ies" id="docente_ies_name" required class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="Institución de Educación Superior">
                 </div>
                 <div class="mb-3">
                     <label for="docente_position" class="block text-gray-700 text-sm font-semibold mb-1.5">Denominación:</label>
-                    <input type="text" name="position" id="docente_position" required class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="Cargo o denominación">
+                    <input type="text" name="denomination" id="docente_position" required class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="Cargo o denominación">
                 </div>
                 <div class="mb-4">
                     <label for="docente_subjects" class="block text-gray-700 text-sm font-semibold mb-1.5">Asignaturas:</label>
                     <textarea name="subjects" id="docente_subjects" rows="3" class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none" placeholder="Lista de asignaturas impartidas"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="docente_archivo_pdf" class="block text-gray-700 text-sm font-semibold mb-1.5">Documento PDF:</label>
+                    <input type="file" name="archivo_pdf" id="docente_archivo_pdf" accept=".pdf,application/pdf" class="w-full text-sm text-gray-700">
+                    <p class="mt-1 text-xs text-gray-500">Seleccione un archivo PDF (opcional).</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-3 border-t border-gray-200">
                     <button type="button" id="cancelDocenteBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
@@ -1094,7 +1130,7 @@
                 </h3>
                 <button id="closePonenciasModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">&times;</button>
             </div>
-            <form id="ponenciasForm" action="<?php echo BASE_PATH; ?>/professor/presentations/store" method="POST" class="px-6 py-4">
+            <form id="ponenciasForm" action="<?php echo BASE_PATH; ?>/professor/presentations/store" method="POST" enctype="multipart/form-data" class="px-6 py-4">
                 <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <input type="hidden" name="id" id="ponenciasId">
                 <div class="mb-3">
@@ -1112,6 +1148,11 @@
                 <div class="mb-4">
                     <label for="ponencias_presentation" class="block text-gray-700 text-sm font-semibold mb-1.5">Ponencia:</label>
                     <textarea name="presentation" id="ponencias_presentation" rows="3" class="shadow-sm border border-gray-300 rounded-lg w-full py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none" placeholder="Título y descripción de la ponencia"></textarea>
+                </div>
+                   <div class="mb-4">
+                    <label for="ponencias_archivo_pdf" class="block text-gray-700 text-sm font-semibold mb-1.5">Documento PDF:</label>
+                    <input type="file" name="archivo_pdf" id="ponencias_archivo_pdf" accept=".pdf,application/pdf" class="w-full text-sm text-gray-700">
+                    <p class="mt-1 text-xs text-gray-500">Seleccione un archivo PDF (opcional).</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-3 border-t border-gray-200">
                     <button type="button" id="cancelPonenciasBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
@@ -1355,9 +1396,10 @@
             currentEditingRow = row;
             const cells = row.querySelectorAll('td');
             const actionCell = cells[cells.length - 1]; // Última celda (acciones)
+            const fieldNames = row.getAttribute('data-fields').split(',');
 
             // Convertir cada celda (excepto la última) en input editable
-            for (let i = 0; i < cells.length - 1; i++) {
+            for (let i = 0; i < fieldNames.length; i++) {
                 const cell = cells[i];
                 const originalValue = cell.textContent.trim();
                 cell.setAttribute('data-original', originalValue);
@@ -1384,9 +1426,10 @@
             const cells = row.querySelectorAll('td');
             const id = row.getAttribute('data-id');
             const type = row.getAttribute('data-type');
+            const fieldNames = row.getAttribute('data-fields').split(',');
 
             // Restaurar valores originales
-            for (let i = 0; i < cells.length - 1; i++) {
+            for (let i = 0; i < fieldNames.length; i++) {
                 const cell = cells[i];
                 const originalValue = cell.getAttribute('data-original');
                 cell.textContent = originalValue;

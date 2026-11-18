@@ -9,7 +9,23 @@ class PdfExportHelper
      */
     public static function createCvReport($cvData, $filename, $roleFilter = null, $searchName = null)
     {
-        $html = self::generateCvHtml($cvData, $roleFilter, $searchName);
+        $download = isset($_GET['download']) && $_GET['download'] === '1';
+        $hasAttachments = false;
+        if ($download) {
+            foreach ($cvData as $data) {
+                if (!empty($data['pdf_attachments'])) {
+                    $hasAttachments = true;
+                    break;
+                }
+            }
+        }
+
+        if ($hasAttachments) {
+            self::downloadCvReportWithAttachments($cvData, $filename, $roleFilter, $searchName);
+            return;
+        }
+
+        $html = self::generateCvHtml($cvData, $roleFilter, $searchName, !$download);
         self::outputPdf($html, $filename, 'portrait');
     }
 
@@ -82,6 +98,117 @@ class PdfExportHelper
         exit;
     }
 
+    private static function downloadCvReportWithAttachments($cvData, $filename, $roleFilter, $searchName)
+    {
+        $autoloadPath = __DIR__ . '/../../vendor/autoload.php';
+        if (!file_exists($autoloadPath)) {
+            throw new RuntimeException('No se encontró el autoload de Composer para combinar los documentos PDF.');
+        }
+        require_once $autoloadPath;
+
+        $mergedPdf = new \setasign\Fpdi\Fpdi();
+        foreach ($cvData as $userId => $data) {
+            $cvHtml = self::generateCvHtml([$userId => $data], $roleFilter, $searchName, false);
+            self::appendPdfBytes($mergedPdf, self::renderHtmlToPdfBytes($cvHtml, 'portrait'));
+
+            foreach ($data['pdf_attachments'] ?? [] as $attachment) {
+                $attachmentPath = self::resolveUploadedPdfPath($attachment['path'] ?? '');
+                try {
+                    self::appendPdfFile($mergedPdf, $attachmentPath);
+                } catch (\setasign\Fpdi\FpdiException $error) {
+                    throw new RuntimeException(
+                        'No se pudo incorporar un PDF adjunto. El archivo puede estar protegido o tener un formato no compatible.',
+                        0,
+                        $error
+                    );
+                }
+            }
+        }
+
+        $safeFilename = preg_replace('/[^A-Za-z0-9_\-.]/', '_', $filename);
+        $pdfContent = $mergedPdf->Output('S');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $safeFilename . '"');
+        header('Content-Length: ' . strlen($pdfContent));
+        echo $pdfContent;
+        exit;
+    }
+
+    private static function renderHtmlToPdfBytes($html, $orientation)
+    {
+        $pdfHtml = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $html);
+        $pdfHtml = '<style>th,.header,.header p{color:#000 !important;}.no-print,.action-buttons,.print-button{display:none !important;height:0 !important;overflow:hidden !important;margin:0 !important;padding:0 !important;}</style>' . $pdfHtml;
+
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($pdfHtml, 'UTF-8');
+        $dompdf->setPaper('A4', $orientation);
+        $dompdf->render();
+
+        return $dompdf->output();
+    }
+
+    private static function appendPdfBytes(\setasign\Fpdi\Fpdi $pdf, $pdfBytes)
+    {
+        $temporaryPdf = tempnam(sys_get_temp_dir(), 'sgpro_cv_');
+        if ($temporaryPdf === false) {
+            throw new RuntimeException('No se pudo preparar un archivo temporal para combinar el CV.');
+        }
+
+        try {
+            $bytesWritten = file_put_contents($temporaryPdf, $pdfBytes);
+            if ($bytesWritten !== strlen($pdfBytes)) {
+                throw new RuntimeException('No se pudo escribir el CV en el archivo temporal.');
+            }
+
+            self::appendPdfFile($pdf, $temporaryPdf);
+        } finally {
+            if (is_file($temporaryPdf) && !unlink($temporaryPdf)) {
+                error_log('PdfExportHelper could not remove a temporary CV PDF.');
+            }
+        }
+    }
+
+    private static function appendPdfFile(\setasign\Fpdi\Fpdi $pdf, $filePath)
+    {
+        $pageCount = $pdf->setSourceFile($filePath);
+        for ($pageNumber = 1; $pageNumber <= $pageCount; $pageNumber++) {
+            $templateId = $pdf->importPage($pageNumber);
+            $pageSize = $pdf->getTemplateSize($templateId);
+            $pdf->AddPage($pageSize['orientation'], [$pageSize['width'], $pageSize['height']]);
+            $pdf->useTemplate($templateId);
+        }
+    }
+
+    private static function resolveUploadedPdfPath($relativePath)
+    {
+        $relativePath = str_replace('\\', '/', trim((string) $relativePath));
+        if (strpos($relativePath, '/uploads/') !== 0) {
+            throw new RuntimeException('La ruta de un archivo PDF adjunto no es válida.');
+        }
+
+        $uploadsRoot = realpath(__DIR__ . '/../../public/uploads');
+        $absolutePath = realpath(__DIR__ . '/../../public/' . ltrim($relativePath, '/'));
+        if (!$uploadsRoot || !$absolutePath || !is_file($absolutePath) || !is_readable($absolutePath)) {
+            throw new RuntimeException('No se encontró un archivo PDF adjunto para incluir en el reporte.');
+        }
+
+        $uploadsPrefix = rtrim($uploadsRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (strpos(strtolower($absolutePath), strtolower($uploadsPrefix)) !== 0) {
+            throw new RuntimeException('La ruta de un archivo PDF adjunto no es válida.');
+        }
+
+        $fileInfo = new finfo(FILEINFO_MIME_TYPE);
+        if ($fileInfo->file($absolutePath) !== 'application/pdf') {
+            throw new RuntimeException('Un archivo adjunto dejó de ser un PDF válido.');
+        }
+
+        return $absolutePath;
+    }
+
     private static function getCurrentPdfDownloadUrl()
     {
         $requestUri = $_SERVER['REQUEST_URI'] ?? '';
@@ -117,7 +244,22 @@ class PdfExportHelper
         return htmlspecialchars($basePath . $relativePath, ENT_QUOTES, 'UTF-8');
     }
 
-    private static function generateCvHtml($cvData, $roleFilter = null, $searchName = null)
+    private static function getPdfViewLink($relativePath, $basePath)
+    {
+        $relativePath = trim((string) $relativePath);
+        if ($relativePath === '') {
+            return '<span class="no-data">Sin PDF</span>';
+        }
+
+        $relativePath = '/' . ltrim($relativePath, '/');
+        $url = htmlspecialchars($basePath . $relativePath, ENT_QUOTES, 'UTF-8');
+
+        return '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" aria-label="Ver archivo PDF" title="Ver archivo PDF" style="display:inline-flex;align-items:center;gap:4px;color:#1d4ed8;text-decoration:underline;">'
+            . '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>'
+            . '<span>Ver PDF</span></a>';
+    }
+
+    private static function generateCvHtml($cvData, $roleFilter = null, $searchName = null, $showPdfLinks = true)
     {
         $basePath = defined('BASE_PATH') ? BASE_PATH : '';
         $downloadPdfUrl = self::getCurrentPdfDownloadUrl();
@@ -265,22 +407,26 @@ HTML;
             <div class="section-title" style="font-weight: bold;">1. Formación Académica</div>
 HTML;
 
-            $html .= '<table><tr><th>Institución</th><th>Título</th><th>Nivel Educativo</th><th>Registro SENESCYT</th></tr>';
+            $educationPdfHeader = $showPdfLinks ? '<th>Archivo PDF</th>' : '';
+            $html .= '<table><tr><th>Institución</th><th>Título</th><th>Nivel Educativo</th><th>Registro SENESCYT</th>' . $educationPdfHeader . '</tr>';
             if (!empty($data['education'])) {
                 foreach ($data['education'] as $edu) {
                     $institution = htmlspecialchars($edu['institution_name'] ?? '', ENT_QUOTES);
                     $degree = htmlspecialchars($edu['degree_title'] ?? '', ENT_QUOTES);
                     $level = htmlspecialchars($edu['education_level'] ?? '', ENT_QUOTES);
                     $senescyt = htmlspecialchars($edu['senescyt_register'] ?? '', ENT_QUOTES);
-                    $html .= "<tr><td>$institution</td><td>$degree</td><td>$level</td><td>$senescyt</td></tr>";
+                    $pdfCell = $showPdfLinks ? '<td>' . self::getPdfViewLink($edu['archivo_pdf'] ?? '', $basePath) . '</td>' : '';
+                    $html .= "<tr><td>$institution</td><td>$degree</td><td>$level</td><td>$senescyt</td>$pdfCell</tr>";
                 }
             } else {
-                $html .= '<tr><td colspan="4" class="no-data">Sin registro de educación</td></tr>';
+                $educationColspan = $showPdfLinks ? 5 : 4;
+                $html .= '<tr><td colspan="' . $educationColspan . '" class="no-data">Sin registro de educación</td></tr>';
             }
             $html .= '</table>';
 
             $html .= '<div class="section-title" style="font-weight: bold;">2. Experiencia Profesional</div>';
-            $html .= '<table><tr><th>Empresa/Institución</th><th>Cargo</th><th>Fecha Inicio</th><th>Fecha Fin</th><th>Actividades</th></tr>';
+            $experiencePdfHeader = $showPdfLinks ? '<th>Archivo PDF</th>' : '';
+            $html .= '<table><tr><th>Empresa/Institución</th><th>Cargo</th><th>Fecha Inicio</th><th>Fecha Fin</th><th>Actividades</th>' . $experiencePdfHeader . '</tr>';
             if (!empty($data['professional_experience'])) {
                 foreach ($data['professional_experience'] as $exp) {
                     $company = htmlspecialchars($exp['company_name'] ?? '', ENT_QUOTES);
@@ -288,10 +434,12 @@ HTML;
                     $startDate = htmlspecialchars($exp['start_date'] ?? '', ENT_QUOTES);
                     $endDate = htmlspecialchars($exp['end_date'] ?? '', ENT_QUOTES);
                     $activities = htmlspecialchars($exp['activities_description'] ?? '', ENT_QUOTES);
-                    $html .= "<tr><td>$company</td><td>$position</td><td>$startDate</td><td>$endDate</td><td>$activities</td></tr>";
+                    $pdfCell = $showPdfLinks ? '<td>' . self::getPdfViewLink($exp['archivo_pdf'] ?? '', $basePath) . '</td>' : '';
+                    $html .= "<tr><td>$company</td><td>$position</td><td>$startDate</td><td>$endDate</td><td>$activities</td>$pdfCell</tr>";
                 }
             } else {
-                $html .= '<tr><td colspan="5" class="no-data">Sin registro de experiencia profesional</td></tr>';
+                $experienceColspan = $showPdfLinks ? 6 : 5;
+                $html .= '<tr><td colspan="' . $experienceColspan . '" class="no-data">Sin registro de experiencia profesional</td></tr>';
             }
             $html .= '</table>';
 
@@ -312,7 +460,8 @@ HTML;
 
             // EXPERIENCIA DOCENTE
             $html .= '<div class="section-title" style="font-weight: bold;">4. Experiencia Docente</div>';
-            $html .= '<table><tr><th>IES</th><th>Denominación</th><th>Asignaturas</th><th>Fecha Inicio</th><th>Fecha Fin</th></tr>';
+            $teachingPdfHeader = $showPdfLinks ? '<th>Archivo PDF</th>' : '';
+            $html .= '<table><tr><th>IES</th><th>Denominación</th><th>Asignaturas</th><th>Fecha Inicio</th><th>Fecha Fin</th>' . $teachingPdfHeader . '</tr>';
             if (!empty($data['teaching_experience'])) {
                 foreach ($data['teaching_experience'] as $teaching) {
                     $ies = htmlspecialchars($teaching['ies'] ?? '', ENT_QUOTES);
@@ -320,10 +469,12 @@ HTML;
                     $subjects = htmlspecialchars($teaching['subjects'] ?? '', ENT_QUOTES);
                     $startDate = htmlspecialchars($teaching['start_date'] ?? '', ENT_QUOTES);
                     $endDate = htmlspecialchars($teaching['end_date'] ?? '', ENT_QUOTES);
-                    $html .= "<tr><td>$ies</td><td>$denomination</td><td>$subjects</td><td>$startDate</td><td>$endDate</td></tr>";
+                    $pdfCell = $showPdfLinks ? '<td>' . self::getPdfViewLink($teaching['archivo_pdf'] ?? '', $basePath) . '</td>' : '';
+                    $html .= "<tr><td>$ies</td><td>$denomination</td><td>$subjects</td><td>$startDate</td><td>$endDate</td>$pdfCell</tr>";
                 }
             } else {
-                $html .= '<tr><td colspan="5" class="no-data">Sin registro de experiencia docente</td></tr>';
+                $teachingColspan = $showPdfLinks ? 6 : 5;
+                $html .= '<tr><td colspan="' . $teachingColspan . '" class="no-data">Sin registro de experiencia docente</td></tr>';
             }
             $html .= '</table>';
 
@@ -364,7 +515,8 @@ HTML;
 
             // PUBLICACIONES
             $html .= '<div class="section-title" style="font-weight: bold;">7. Publicaciones</div>';
-            $html .= '<table><tr><th>Título</th><th>Tipo</th><th>Editorial/Revista</th><th>ISBN/ISSN</th><th>Autoría</th></tr>';
+            $publicationPdfHeader = $showPdfLinks ? '<th>Archivo PDF</th>' : '';
+            $html .= '<table><tr><th>Título</th><th>Tipo</th><th>Editorial/Revista</th><th>ISBN/ISSN</th><th>Autoría</th>' . $publicationPdfHeader . '</tr>';
             if (!empty($data['publications'])) {
                 foreach ($data['publications'] as $publication) {
                     $title = htmlspecialchars($publication['publication_title'] ?? '', ENT_QUOTES);
@@ -372,25 +524,30 @@ HTML;
                     $publisher = htmlspecialchars($publication['publisher_magazine'] ?? '', ENT_QUOTES);
                     $isbn = htmlspecialchars($publication['isbn_issn'] ?? '', ENT_QUOTES);
                     $authorship = htmlspecialchars($publication['authorship'] ?? '', ENT_QUOTES);
-                    $html .= "<tr><td>$title</td><td>$type</td><td>$publisher</td><td>$isbn</td><td>$authorship</td></tr>";
+                    $pdfCell = $showPdfLinks ? '<td>' . self::getPdfViewLink($publication['archivo_pdf'] ?? '', $basePath) . '</td>' : '';
+                    $html .= "<tr><td>$title</td><td>$type</td><td>$publisher</td><td>$isbn</td><td>$authorship</td>$pdfCell</tr>";
                 }
             } else {
-                $html .= '<tr><td colspan="5" class="no-data">Sin registro de publicaciones</td></tr>';
+                $publicationColspan = $showPdfLinks ? 6 : 5;
+                $html .= '<tr><td colspan="' . $publicationColspan . '" class="no-data">Sin registro de publicaciones</td></tr>';
             }
             $html .= '</table>';
 
             // PONENCIAS
             $html .= '<div class="section-title" style="font-weight: bold;">8. Ponencias</div>';
-            $html .= '<table><tr><th>Institución</th><th>Año</th><th>Presentación</th></tr>';
+            $presentationPdfHeader = $showPdfLinks ? '<th>Archivo PDF</th>' : '';
+            $html .= '<table><tr><th>Institución</th><th>Año</th><th>Presentación</th>' . $presentationPdfHeader . '</tr>';
             if (!empty($data['presentations'])) {
                 foreach ($data['presentations'] as $presentation) {
                     $institution = htmlspecialchars($presentation['institution_name'] ?? '', ENT_QUOTES);
                     $year = htmlspecialchars($presentation['year'] ?? '', ENT_QUOTES);
                     $presentationTitle = htmlspecialchars($presentation['presentation'] ?? '', ENT_QUOTES);
-                    $html .= "<tr><td>$institution</td><td>$year</td><td>$presentationTitle</td></tr>";
+                    $pdfCell = $showPdfLinks ? '<td>' . self::getPdfViewLink($presentation['archivo_pdf'] ?? '', $basePath) . '</td>' : '';
+                    $html .= "<tr><td>$institution</td><td>$year</td><td>$presentationTitle</td>$pdfCell</tr>";
                 }
             } else {
-                $html .= '<tr><td colspan="3" class="no-data">Sin registro de ponencias</td></tr>';
+                $presentationColspan = $showPdfLinks ? 4 : 3;
+                $html .= '<tr><td colspan="' . $presentationColspan . '" class="no-data">Sin registro de ponencias</td></tr>';
             }
             $html .= '</table>';
 
@@ -470,6 +627,20 @@ HTML;
                 $html .= '<tr><td colspan="2" class="no-data">Sin registro de idiomas</td></tr>';
             }
             $html .= '</table>';
+
+            if ($showPdfLinks && !empty($data['pdf_attachments'])) {
+                $html .= '<div class="section-title" style="font-weight: bold;">Documentos PDF adjuntos</div>';
+                $html .= '<ul style="margin: 8px 0 16px; padding-left: 22px;">';
+                foreach ($data['pdf_attachments'] as $attachment) {
+                    $section = htmlspecialchars((string) ($attachment['section'] ?? ''), ENT_QUOTES, 'UTF-8');
+                    $label = trim((string) ($attachment['label'] ?? ''));
+                    $pdfLink = self::getPdfViewLink($attachment['path'] ?? '', $basePath);
+                    $description = $label !== '' ? ': ' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') : '';
+                    $html .= '<li style="margin-bottom: 6px;"><strong>' . $section . '</strong>'
+                        . $description . ' — ' . $pdfLink . '</li>';
+                }
+                $html .= '</ul>';
+            }
 
             $html .= '</div>'; // Cierre de user-content
             $html .= '</div>'; // Cierre de user-section

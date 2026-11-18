@@ -18,11 +18,12 @@ class CvTeachingExperienceModel extends BaseModel
         $endDate,
         $ies,
         $denomination,
-        $subjects
+        $subjects,
+        $archivoPDF
     ) {
         $query = "INSERT INTO {$this->table} (
-            professor_id, start_date, end_date, ies, denomination, subjects
-        ) VALUES (?, ?, ?, ?, ?, ?)";
+            professor_id, start_date, end_date, ies, denomination, subjects, archivo_pdf
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(1, $professorId);
@@ -31,6 +32,7 @@ class CvTeachingExperienceModel extends BaseModel
         $stmt->bindParam(4, $ies);
         $stmt->bindParam(5, $denomination);
         $stmt->bindParam(6, $subjects);
+        $stmt->bindParam(7, $archivoPDF);
 
         return $stmt->execute();
     }
